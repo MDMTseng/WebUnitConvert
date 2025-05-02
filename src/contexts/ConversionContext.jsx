@@ -6,6 +6,7 @@ import { getItem, setItem } from '../utils/localStorage'; // Import localStorage
 const MAX_HISTORY_LENGTH = 20; // Max number of history items
 const HISTORY_STORAGE_KEY = 'conversionHistory'; // Key for localStorage
 const FAVORITES_STORAGE_KEY = 'conversionFavorites'; // Key for favorites
+const APP_STATE_STORAGE_KEY = 'conversionAppState'; // Key for application state
 const DEBOUNCE_DELAY = 2000; // 2 seconds debounce for history entries
 
 // --- Initial State ---
@@ -39,6 +40,7 @@ const ActionTypes = {
   SET_PENDING_HISTORY: 'SET_PENDING_HISTORY', // New action to store pending entry
   SET_SELECTING_FROM_HISTORY: 'SET_SELECTING_FROM_HISTORY', // Flag for history selection
   SET_USER_INPUT: 'SET_USER_INPUT', // Track if input is from user
+  RESTORE_STATE: 'RESTORE_STATE', // Restore full app state
   // Favorites Actions
   ADD_FAVORITE: 'ADD_FAVORITE',
   REMOVE_FAVORITE: 'REMOVE_FAVORITE',
@@ -48,6 +50,13 @@ const ActionTypes = {
 // --- Reducer ---
 const conversionReducer = (state = initialState, action) => {
   switch (action.type) {
+    case ActionTypes.RESTORE_STATE:
+      // Restore full app state but keep categories
+      return {
+        ...state,
+        ...action.payload,
+        categories: state.categories, // Keep registry
+      };
     case ActionTypes.SET_CATEGORY:
       // When category changes, reset units and input/output
       const newCategoryUnits = Object.keys(state.categories[action.payload].units);
@@ -198,8 +207,28 @@ const ConversionContext = createContext({
 // --- Provider Component ---
 export const ConversionProvider = ({ children }) => {
   const init = (initialState) => {
+    // Load history and favorites
     const loadedHistory = getItem(HISTORY_STORAGE_KEY, []);
     const loadedFavorites = getItem(FAVORITES_STORAGE_KEY, []);
+    
+    // Try to load saved app state
+    const savedAppState = getItem(APP_STATE_STORAGE_KEY, null);
+    
+    if (savedAppState) {
+      // If we have saved state, restore it but keep the registry and other fixed values
+      return {
+        ...initialState,
+        history: loadedHistory,
+        favorites: loadedFavorites,
+        selectedCategory: savedAppState.selectedCategory || initialState.selectedCategory,
+        fromUnit: savedAppState.fromUnit || initialState.fromUnit,
+        toUnit: savedAppState.toUnit || initialState.toUnit,
+        inputValue: savedAppState.inputValue || initialState.inputValue,
+        outputValue: savedAppState.outputValue || initialState.outputValue,
+      };
+    }
+    
+    // Default initialization if no saved state
     return {
       ...initialState,
       history: loadedHistory,
@@ -209,6 +238,49 @@ export const ConversionProvider = ({ children }) => {
 
   const [state, dispatch] = useReducer(conversionReducer, initialState, init);
   const historyTimeoutRef = useRef(null);
+
+  // Save app state when window is about to close or user navigates away
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Create a simplified version of the state to save (exclude internal flags)
+      const stateToSave = {
+        selectedCategory: state.selectedCategory,
+        fromUnit: state.fromUnit,
+        toUnit: state.toUnit,
+        inputValue: state.inputValue,
+        outputValue: state.outputValue,
+      };
+      
+      setItem(APP_STATE_STORAGE_KEY, stateToSave);
+    };
+    
+    // Add event listener for when the user is about to leave
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    // Clean up event listener
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [state.selectedCategory, state.fromUnit, state.toUnit, state.inputValue, state.outputValue]);
+
+  // Periodically save app state during use (as a backup)
+  useEffect(() => {
+    const saveStateInterval = setInterval(() => {
+      const stateToSave = {
+        selectedCategory: state.selectedCategory,
+        fromUnit: state.fromUnit,
+        toUnit: state.toUnit,
+        inputValue: state.inputValue,
+        outputValue: state.outputValue,
+      };
+      
+      setItem(APP_STATE_STORAGE_KEY, stateToSave);
+    }, 10000); // Save every 10 seconds
+    
+    return () => {
+      clearInterval(saveStateInterval);
+    };
+  }, [state.selectedCategory, state.fromUnit, state.toUnit, state.inputValue, state.outputValue]);
 
   // Debounce the history entry addition
   useEffect(() => {
