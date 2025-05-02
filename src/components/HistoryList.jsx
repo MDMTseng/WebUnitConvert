@@ -1,100 +1,28 @@
 import React from 'react';
-import styled from 'styled-components';
+import { 
+  Box, 
+  Typography, 
+  Button, 
+  List, 
+  ListItem, 
+  ListItemText,
+  Paper
+} from '@mui/material';
+import ClearIcon from '@mui/icons-material/ClearAll';
 import { useConversionContext } from '../contexts/useConversionContext';
 import { ActionTypes } from '../contexts/ConversionContext';
-import { media } from '../utils/styles';
 import IconButton from './IconButton';
-// import { ClearIcon } from '../assets/icons'; // Placeholder
 
 // Function to find unit details (Simplified)
 const getUnitDetails = (unitSymbol, categories) => {
-    for (const categoryKey in categories) {
-      if (categories[categoryKey]?.units?.[unitSymbol]) {
-        const unitData = categories[categoryKey].units[unitSymbol];
-        return { name: unitData.name, name_zh: unitData.name_zh, symbol: unitSymbol };
-      }
+  for (const categoryKey in categories) {
+    if (categories[categoryKey]?.units?.[unitSymbol]) {
+      const unitData = categories[categoryKey].units[unitSymbol];
+      return { name: unitData.name, name_zh: unitData.name_zh, symbol: unitSymbol };
     }
-    return { name: unitSymbol, symbol: unitSymbol }; // Fallback
-  };
-
-const ClearIcon = () => <span>🧹</span>; // Placeholder
-
-const HistoryWrapper = styled.div`
-  /* Inherits margin/padding from InfoSections in App.jsx */
-`;
-
-const HistoryHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-`;
-
-const HistoryTitle = styled.h3`
-  margin: 0;
-  font-size: 1.1rem;
-  color: ${({ theme }) => theme.text}; // Use theme
-`;
-
-const ClearButton = styled.button` // Use a standard button for clear
-  padding: 0.3rem 0.6rem;
-  font-size: 0.8rem;
-  background-color: ${({ theme }) => theme.clearButtonBg};
-  color: ${({ theme }) => theme.clearButtonColor};
-  border: 1px solid ${({ theme }) => theme.clearButtonBorder};
-  border-radius: 4px;
-  cursor: pointer;
-  &:hover {
-      background-color: ${({ theme }) => theme.clearButtonHover};
   }
-`;
-
-const HistoryListContainer = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  max-height: 200px;
-  overflow-y: auto;
-  border: 1px solid ${({ theme }) => theme.listBorder}; // Use theme
-  border-radius: 4px;
-  background-color: ${({ theme }) => theme.inputBg}; // Use theme for background
-`;
-
-const HistoryItem = styled.li`
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid ${({ theme }) => theme.listBorder}; // Use theme
-  font-size: 0.9rem;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  color: ${({ theme }) => theme.text}; // Use theme
-
-  &:last-child {
-    border-bottom: none;
-  }
-
-  &:hover {
-    background-color: ${({ theme }) => theme.listItemHover}; // Use theme
-  }
-`;
-
-const HistoryDetails = styled.span`
-  flex-grow: 1;
-`;
-
-const HistoryTimestamp = styled.span`
-  font-size: 0.8rem;
-  color: ${({ theme }) => theme.text}99; // Use theme text with opacity
-  white-space: nowrap; // Prevent wrapping
-`;
-
-const NoHistory = styled.p`
-  color: ${({ theme }) => theme.text}88; // Use theme text with opacity
-  text-align: center;
-  padding: 1rem;
-`;
+  return { name: unitSymbol, symbol: unitSymbol }; // Fallback
+};
 
 const HistoryList = () => {
   const { state, dispatch } = useConversionContext();
@@ -105,27 +33,27 @@ const HistoryList = () => {
     dispatch({ type: ActionTypes.SET_CATEGORY, payload: item.category });
     // Need timeout to allow category state update before unit update
     setTimeout(() => {
-        dispatch({ type: ActionTypes.SET_FROM_UNIT, payload: item.fromUnit });
-        dispatch({ type: ActionTypes.SET_TO_UNIT, payload: item.toUnit });
-        dispatch({ type: ActionTypes.SET_INPUT_VALUE, payload: item.inputValue });
-        // Output will be recalculated by useEffect in App.jsx
+      dispatch({ type: ActionTypes.SET_FROM_UNIT, payload: item.fromUnit });
+      dispatch({ type: ActionTypes.SET_TO_UNIT, payload: item.toUnit });
+      dispatch({ type: ActionTypes.SET_INPUT_VALUE, payload: item.inputValue });
+      // Output will be recalculated by useEffect in App.jsx
     }, 0);
   };
 
   const handleClearHistory = () => {
-      if (window.confirm('Are you sure you want to clear the conversion history?')) {
-          dispatch({ type: ActionTypes.CLEAR_HISTORY });
-      }
+    if (window.confirm('Are you sure you want to clear the conversion history?')) {
+      dispatch({ type: ActionTypes.CLEAR_HISTORY });
+    }
   };
 
   const formatTimestamp = (isoString) => {
-      if (!isoString) return '';
-      try {
-          const date = new Date(isoString);
-          return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      } catch (e) {
-          return '';
-      }
+    if (!isoString) return '';
+    try {
+      const date = new Date(isoString);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      return '';
+    }
   };
 
   // Helper function to format unit display name
@@ -136,28 +64,72 @@ const HistoryList = () => {
   };
 
   return (
-    <HistoryWrapper>
-       <HistoryHeader>
-            <HistoryTitle>History</HistoryTitle>
-            {history.length > 0 && (
-                <ClearButton onClick={handleClearHistory}>Clear</ClearButton>
-            )}
-        </HistoryHeader>
+    <Box>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        mb: 2
+      }}>
+        <Typography variant="h6" component="h3">
+          History
+        </Typography>
+        {history.length > 0 && (
+          <Button 
+            variant="outlined" 
+            size="small" 
+            color="error" 
+            onClick={handleClearHistory}
+            startIcon={<ClearIcon />}
+          >
+            Clear
+          </Button>
+        )}
+      </Box>
+      
       {history.length === 0 ? (
-        <NoHistory>No history yet.</NoHistory>
+        <Typography 
+          sx={{ 
+            color: 'text.secondary', 
+            textAlign: 'center', 
+            py: 2 
+          }}
+        >
+          No history yet.
+        </Typography>
       ) : (
-        <HistoryListContainer>
-          {history.map((item) => (
-            <HistoryItem key={item.id} onClick={() => handleHistoryClick(item)} title="Click to restore">
-              <HistoryDetails>
-                {item.inputValue} {getUnitDisplayName(item.fromUnit)} → {item.outputValue} {getUnitDisplayName(item.toUnit)}
-              </HistoryDetails>
-              <HistoryTimestamp>{formatTimestamp(item.timestamp)}</HistoryTimestamp>
-            </HistoryItem>
-          ))}
-        </HistoryListContainer>
+        <Paper variant="outlined" sx={{ maxHeight: 200, overflow: 'auto' }}>
+          <List dense disablePadding>
+            {history.map((item) => (
+              <ListItem 
+                key={item.id} 
+                onClick={() => handleHistoryClick(item)} 
+                button
+                divider={history.indexOf(item) !== history.length - 1}
+                sx={{ 
+                  '&:hover': { 
+                    bgcolor: 'action.hover'
+                  }
+                }}
+              >
+                <ListItemText 
+                  primary={
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>
+                        {item.inputValue} {getUnitDisplayName(item.fromUnit)} → {item.outputValue} {getUnitDisplayName(item.toUnit)}
+                      </span>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', ml: 1 }}>
+                        {formatTimestamp(item.timestamp)}
+                      </Typography>
+                    </Box>
+                  }
+                />
+              </ListItem>
+            ))}
+          </List>
+        </Paper>
       )}
-    </HistoryWrapper>
+    </Box>
   );
 };
 

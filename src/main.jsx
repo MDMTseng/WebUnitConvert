@@ -4,7 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import { ConversionProvider } from './contexts/ConversionContext'
 import { ThemeContextProvider } from './contexts/ThemeContext'
-import { GlobalStyles } from './utils/GlobalStyles'
+import { CssBaseline } from '@mui/material'
 import { onCLS, onFCP, onINP, onLCP, onTTFB } from 'web-vitals';
 
 function sendToAnalytics({ name, value, id }) {
@@ -31,7 +31,7 @@ if (process.env.NODE_ENV !== 'production') {
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeContextProvider>
-      <GlobalStyles />
+      <CssBaseline />
       <ConversionProvider>
         <App />
       </ConversionProvider>

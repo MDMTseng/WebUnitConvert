@@ -1,81 +1,36 @@
 import React from 'react';
-import styled from 'styled-components';
+import { 
+  Box, 
+  Typography, 
+  List, 
+  ListItem, 
+  ListItemText, 
+  ListItemSecondaryAction,
+  Paper,
+  IconButton as MuiIconButton
+} from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useConversionContext } from '../contexts/useConversionContext';
 import { ActionTypes } from '../contexts/ConversionContext';
-import IconButton from './IconButton';
-// import { TrashIcon } from '../assets/icons'; // Placeholder
-
-const TrashIcon = () => <span>🗑️</span>; // Placeholder
-
-const FavoritesWrapper = styled.div`
-  /* Inherits margin/padding from InfoSections in App.jsx */
-`;
-
-const FavoritesTitle = styled.h3`
-  margin-bottom: 1rem;
-  font-size: 1.1rem;
-  color: ${({ theme }) => theme.text}; // Use theme
-`;
-
-const FavoritesListContainer = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  max-height: 200px; // Consistent height with history
-  overflow-y: auto;
-  border: 1px solid ${({ theme }) => theme.listBorder}; // Use theme
-  border-radius: 4px;
-  background-color: ${({ theme }) => theme.inputBg}; // Use theme
-`;
-
-const FavoriteItem = styled.li`
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid ${({ theme }) => theme.listBorder}; // Use theme
-  font-size: 0.9rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  color: ${({ theme }) => theme.text}; // Use theme
-
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-
-const FavoriteDetails = styled.span`
-  flex-grow: 1;
-  cursor: pointer;
-  &:hover {
-    text-decoration: underline;
-    color: ${({ theme }) => theme.text}; // Ensure text color on hover
-  }
-`;
-
-const NoFavorites = styled.p`
-  color: ${({ theme }) => theme.text}88; // Use theme text with opacity
-  text-align: center;
-  padding: 1rem;
-`;
 
 // Function to find unit details (Simplified)
 const getUnitDetails = (unitSymbol, categories) => {
-    for (const categoryKey in categories) {
-      if (categories[categoryKey]?.units?.[unitSymbol]) {
-        const unitData = categories[categoryKey].units[unitSymbol];
-        return { name: unitData.name, name_zh: unitData.name_zh, symbol: unitSymbol };
-      }
+  for (const categoryKey in categories) {
+    if (categories[categoryKey]?.units?.[unitSymbol]) {
+      const unitData = categories[categoryKey].units[unitSymbol];
+      return { name: unitData.name, name_zh: unitData.name_zh, symbol: unitSymbol };
     }
-    return { name: unitSymbol, symbol: unitSymbol }; // Fallback
-  };
+  }
+  return { name: unitSymbol, symbol: unitSymbol }; // Fallback
+};
 
 const FavoritesList = () => {
   const { state, dispatch } = useConversionContext();
   const { favorites, categories } = state;
 
   const getCategoryName = (catId) => {
-      return categories[catId]?.units[categories[catId]?.baseUnit]?.name || catId;
-      // Simplified name lookup - assumes base unit name represents category well enough
+    return categories[catId]?.units[categories[catId]?.baseUnit]?.name || catId;
+    // Simplified name lookup - assumes base unit name represents category well enough
   }
 
   const handleFavoriteClick = (item) => {
@@ -83,10 +38,10 @@ const FavoritesList = () => {
     dispatch({ type: ActionTypes.SET_CATEGORY, payload: item.category });
     // Use timeout again for simplicity, ideally a dedicated action
     setTimeout(() => {
-        dispatch({ type: ActionTypes.SET_FROM_UNIT, payload: item.fromUnit });
-        dispatch({ type: ActionTypes.SET_TO_UNIT, payload: item.toUnit });
-        // Optionally clear input/output when loading favorite?
-        dispatch({ type: ActionTypes.SET_INPUT_VALUE, payload: '' });
+      dispatch({ type: ActionTypes.SET_FROM_UNIT, payload: item.fromUnit });
+      dispatch({ type: ActionTypes.SET_TO_UNIT, payload: item.toUnit });
+      // Optionally clear input/output when loading favorite?
+      dispatch({ type: ActionTypes.SET_INPUT_VALUE, payload: '' });
     }, 0);
   };
 
@@ -104,32 +59,52 @@ const FavoritesList = () => {
   };
 
   return (
-    <FavoritesWrapper>
-      <FavoritesTitle>Favorites</FavoritesTitle>
+    <Box>
+      <Typography variant="h6" component="h3" sx={{ mb: 2 }}>
+        Favorites
+      </Typography>
+      
       {favorites.length === 0 ? (
-        <NoFavorites>No favorites saved yet.</NoFavorites>
+        <Typography 
+          sx={{ 
+            color: 'text.secondary', 
+            textAlign: 'center', 
+            py: 2 
+          }}
+        >
+          No favorites saved yet.
+        </Typography>
       ) : (
-        <FavoritesListContainer>
-          {favorites.map((item) => (
-            <FavoriteItem key={item.id}>
-              <FavoriteDetails
+        <Paper variant="outlined" sx={{ maxHeight: 200, overflow: 'auto' }}>
+          <List dense disablePadding>
+            {favorites.map((item) => (
+              <ListItem 
+                key={item.id} 
+                button 
                 onClick={() => handleFavoriteClick(item)}
-                title="Click to load this conversion setup"
+                divider={favorites.indexOf(item) !== favorites.length - 1}
+                sx={{ pr: 7 }} // Leave space for delete button
               >
-                {/* {item.category}: */}{/* Removed category display for brevity? */}
-                 {getUnitDisplayName(item.fromUnit)} to {getUnitDisplayName(item.toUnit)}
-              </FavoriteDetails>
-              <IconButton
-                 onClick={(e) => handleRemoveFavorite(item.id, e)}
-                 aria-label={`Remove favorite ${item.fromUnit} to ${item.toUnit}`}
-              >
-                 <TrashIcon />
-              </IconButton>
-            </FavoriteItem>
-          ))}
-        </FavoritesListContainer>
+                <ListItemText 
+                  primary={`${getUnitDisplayName(item.fromUnit)} to ${getUnitDisplayName(item.toUnit)}`}
+                />
+                <ListItemSecondaryAction>
+                  <MuiIconButton
+                    edge="end"
+                    size="small"
+                    onClick={(e) => handleRemoveFavorite(item.id, e)}
+                    aria-label={`Remove favorite ${item.fromUnit} to ${item.toUnit}`}
+                    color="error"
+                  >
+                    <DeleteIcon />
+                  </MuiIconButton>
+                </ListItemSecondaryAction>
+              </ListItem>
+            ))}
+          </List>
+        </Paper>
       )}
-    </FavoritesWrapper>
+    </Box>
   );
 };
 

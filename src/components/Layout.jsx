@@ -1,54 +1,66 @@
 import React from 'react';
-import styled from 'styled-components';
+import { 
+  AppBar,
+  Box,
+  Container,
+  CssBaseline,
+  IconButton,
+  Toolbar,
+  Typography,
+  Paper
+} from '@mui/material';
+import { Brightness4, Brightness7 } from '@mui/icons-material';
 import { useTheme } from '../contexts/ThemeContext';
-import IconButton from './IconButton';
-
-// Placeholder icons
-const SunIcon = () => <span>☀️</span>;
-const MoonIcon = () => <span>🌙</span>;
-
-const AppWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-  background-color: ${({ theme }) => theme.background};
-`;
-
-const Header = styled.header`
-  padding: 1rem;
-  background-color: ${({ theme }) => theme.headerBg};
-  color: ${({ theme }) => theme.text};
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const Main = styled.main`
-  flex-grow: 1;
-  display: flex;
-`;
-
-const Footer = styled.footer`
-  padding: 1rem;
-  background-color: ${({ theme }) => theme.footerBg};
-  color: ${({ theme }) => theme.text};
-  text-align: center;
-`;
 
 const Layout = ({ children }) => {
   const { theme, toggleTheme } = useTheme();
+  const isDarkMode = theme.mode === 'dark';
 
   return (
-    <AppWrapper>
-      <Header>
-        {/* <h1>Unit Converter</h1> */}
-      </Header>
-      <Main>{children}</Main>
-      <Footer>
-        <p>&copy; {new Date().getFullYear()} Unit Converter</p>
-      </Footer>
-    </AppWrapper>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      minHeight: '100vh',
+      bgcolor: 'background.default',
+      color: 'text.primary'
+    }}>
+      <CssBaseline />
+      <AppBar position="static" color="primary" elevation={3}>
+        <Toolbar sx={{ justifyContent: 'space-between' }}>
+          <Typography variant="h6" component="h1">
+            Unit Converter
+          </Typography>
+          <IconButton 
+            onClick={toggleTheme} 
+            color="inherit" 
+            size="large"
+            aria-label="toggle dark/light mode"
+          >
+            {isDarkMode ? <Brightness7 /> : <Brightness4 />}
+          </IconButton>
+        </Toolbar>
+      </AppBar>
+      
+      <Container component="main" sx={{ 
+        flexGrow: 1,
+        py: 4,
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        {children}
+      </Container>
+      
+      <Paper component="footer" square elevation={3} sx={{ 
+        py: 2,
+        px: 2,
+        mt: 'auto',
+        bgcolor: 'primary.light'
+      }}>
+        <Typography variant="body2" color="white" align="center">
+          &copy; {new Date().getFullYear()} Unit Converter
+        </Typography>
+      </Paper>
+    </Box>
   );
 };
 

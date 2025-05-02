@@ -1,33 +1,5 @@
 import React from 'react';
-import styled from 'styled-components';
-
-const InputWrapper = styled.div`
-  margin-bottom: 1rem;
-`;
-
-const Label = styled.label`
-  display: block;
-  margin-bottom: 0.5rem;
-  color: ${({ theme }) => theme.text};
-`;
-
-const Input = styled.input`
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid ${({ theme }) => theme.inputBorder};
-  border-radius: 4px;
-  background-color: ${({ theme }) => theme.inputBg};
-  color: ${({ theme }) => theme.text};
-
-  &[type='number'] {
-    -moz-appearance: textfield;
-  }
-  &::-webkit-outer-spin-button,
-  &::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-`;
+import { TextField, Box } from '@mui/material';
 
 const NumericInput = ({ label, value, onChange, id, placeholder = 'Enter value' }) => {
   const handleChange = (e) => {
@@ -38,18 +10,31 @@ const NumericInput = ({ label, value, onChange, id, placeholder = 'Enter value' 
   };
 
   return (
-    <InputWrapper>
-      <Label htmlFor={id}>{label}:</Label>
-      <Input
-        type="text"
-        pattern="^-?\d*\.?\d*$"
-        inputMode="decimal"
+    <Box sx={{ mb: 2 }}>
+      <TextField
+        fullWidth
+        variant="outlined"
+        label={label}
         id={id}
-        value={value}
+        value={value || ''}
         onChange={handleChange}
         placeholder={placeholder}
+        inputProps={{
+          inputMode: 'decimal',
+          pattern: '^-?\\d*\\.?\\d*$',
+          sx: {
+            // Remove spinner arrows for number inputs
+            '&::-webkit-outer-spin-button, &::-webkit-inner-spin-button': {
+              '-webkit-appearance': 'none',
+              margin: 0,
+            },
+            '&[type=number]': {
+              '-moz-appearance': 'textfield',
+            },
+          }
+        }}
       />
-    </InputWrapper>
+    </Box>
   );
 };
 

@@ -1,30 +1,19 @@
 import React from 'react';
-import styled from 'styled-components';
+import { IconButton as MuiIconButton } from '@mui/material';
 
-const Button = styled.button`
-  background: none;
-  border: none;
-  padding: 0.5rem;
-  cursor: pointer;
-  font-size: 1.2rem; /* Adjust as needed */
-  color: ${({ theme }) => theme.iconColor};
-
-  &:hover {
-    color: ${({ theme }) => theme.iconHover};
-  }
-
-  &:disabled {
-    color: ${({ theme }) => theme.iconColor}55;
-    cursor: not-allowed;
-  }
-`;
-
-// Example Usage: <IconButton onClick={handler} aria-label="Favorite"><StarIcon /></IconButton>
-const IconButton = ({ children, onClick, disabled, 'aria-label': ariaLabel }) => {
+// Material UI IconButton with sensible defaults
+const IconButton = ({ children, onClick, disabled, 'aria-label': ariaLabel, color = "primary", size = "medium", ...props }) => {
   return (
-    <Button onClick={onClick} disabled={disabled} aria-label={ariaLabel}>
-      {children} {/* Expects an SVG icon component or similar */}
-    </Button>
+    <MuiIconButton 
+      onClick={onClick} 
+      disabled={disabled} 
+      aria-label={ariaLabel}
+      color={color}
+      size={size}
+      {...props}
+    >
+      {children}
+    </MuiIconButton>
   );
 };
 

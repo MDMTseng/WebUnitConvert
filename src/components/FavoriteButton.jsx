@@ -1,21 +1,16 @@
 import React from 'react';
-import styled from 'styled-components';
 import IconButton from './IconButton';
-// Import star icons (replace with actual icons later)
-// import { StarIconFilled, StarIconOutline } from '../assets/icons';
+import { Star, StarOutline } from '@mui/icons-material';
 
-// Placeholder icons
-const StarIconFilled = () => <span>★</span>;
-const StarIconOutline = () => <span>☆</span>;
-
-// No specific theme styles needed here as it uses IconButton
-const FavoriteButton = ({ isFavorite, onClick }) => {
+const FavoriteButton = ({ isFavorite, onClick, disabled = false }) => {
   return (
     <IconButton
       onClick={onClick}
       aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+      color="primary"
+      disabled={disabled}
     >
-      {isFavorite ? <StarIconFilled /> : <StarIconOutline />}
+      {isFavorite ? <Star /> : <StarOutline />}
     </IconButton>
   );
 };

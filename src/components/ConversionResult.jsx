@@ -1,24 +1,6 @@
 import React from 'react';
-import styled from 'styled-components';
+import { Box, Typography, Alert } from '@mui/material';
 import NumericInput from './NumericInput';
-
-const ResultWrapper = styled.div`
-  margin-top: 1rem;
-  /* No background/padding needed if input handles it */
-`;
-
-const ErrorText = styled.p`
-  color: ${({ theme }) => theme.errorText};
-  font-weight: bold;
-  margin: 0;
-  padding: 0.75rem 0.5rem;
-`;
-
-const PlaceholderText = styled.p`
-    margin: 0;
-    color: ${({ theme }) => theme.text}88;
-    padding: 0.75rem 0.5rem;
-`;
 
 const ConversionResult = ({ result, error, onOutputChange, readOnly = false }) => {
   const handleChange = (newValue) => {
@@ -28,9 +10,11 @@ const ConversionResult = ({ result, error, onOutputChange, readOnly = false }) =
   };
 
   return (
-    <ResultWrapper>
+    <Box sx={{ mt: 2 }}>
       {error ? (
-        <ErrorText>Error: {error}</ErrorText>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
       ) : (
         <NumericInput
           label="Result"
@@ -41,7 +25,7 @@ const ConversionResult = ({ result, error, onOutputChange, readOnly = false }) =
           readOnly={readOnly}
         />
       )}
-    </ResultWrapper>
+    </Box>
   );
 };
 

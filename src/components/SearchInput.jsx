@@ -1,64 +1,18 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import styled from 'styled-components';
+import { 
+  Box,
+  TextField,
+  List,
+  ListItem,
+  ListItemText,
+  Paper,
+  ClickAwayListener,
+  Typography
+} from '@mui/material';
 import { searchUnits } from '../utils/search';
 import { useConversionContext } from '../contexts/useConversionContext';
 import { ActionTypes } from '../contexts/ConversionContext';
 import useDebounce from '../hooks/useDebounce'; // Assuming a debounce hook exists or will be created
-
-const SearchWrapper = styled.div`
-  position: relative;
-  width: 250px; // Adjust width as needed
-`;
-
-const Input = styled.input`
-  width: 100%;
-  padding: 0.5rem 0.8rem;
-  border: 1px solid ${({ theme }) => theme.inputBorder};
-  border-radius: 4px;
-  background-color: ${({ theme }) => theme.inputBg};
-  color: ${({ theme }) => theme.text};
-  font-size: 0.9rem;
-`;
-
-const ResultsList = styled.ul`
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background-color: ${({ theme }) => theme.inputBg};
-  border: 1px solid ${({ theme }) => theme.listBorder};
-  border-top: none;
-  border-radius: 0 0 4px 4px;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  max-height: 250px;
-  overflow-y: auto;
-  z-index: 10;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-`;
-
-const ResultItem = styled.li`
-  padding: 0.6rem 0.8rem;
-  cursor: pointer;
-  color: ${({ theme }) => theme.text};
-  font-size: 0.9rem;
-
-  &:hover {
-    background-color: ${({ theme }) => theme.listItemHover};
-  }
-
-  // Style for highlighted item (keyboard navigation)
-  &.highlighted {
-    background-color: ${({ theme }) => theme.listItemHover};
-  }
-`;
-
-const NoResults = styled.div`
-    padding: 0.6rem 0.8rem;
-    color: ${({ theme }) => theme.text}88;
-    font-size: 0.9rem;
-`;
 
 const SearchInput = () => {
   const [query, setQuery] = useState('');
@@ -67,7 +21,7 @@ const SearchInput = () => {
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const debouncedQuery = useDebounce(query, 300); // Debounce search input
   const { dispatch } = useConversionContext();
-  const wrapperRef = useRef(null); // Ref for detecting outside clicks
+  const inputRef = useRef(null);
 
   // Perform search when debounced query changes
   useEffect(() => {
@@ -81,19 +35,6 @@ const SearchInput = () => {
       setIsOpen(false);
     }
   }, [debouncedQuery]);
-
-  // Handle clicking outside to close results
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [wrapperRef]);
 
   const handleInputChange = (e) => {
     setQuery(e.target.value);
@@ -132,42 +73,78 @@ const SearchInput = () => {
         }
         break;
       case 'Escape':
-          setIsOpen(false);
-          break;
+        setIsOpen(false);
+        break;
       default:
         break;
     }
   };
 
+  const handleClickAway = () => {
+    setIsOpen(false);
+  };
+
   return (
-    <SearchWrapper ref={wrapperRef}>
-      <Input
-        type="text"
-        placeholder="Search units..."
-        value={query}
-        onChange={handleInputChange}
-        onFocus={() => query && setResults(searchUnits(query)) && setIsOpen(true)} // Reopen on focus if there was a query
-        onKeyDown={handleKeyDown}
-      />
-      {isOpen && (
-        <ResultsList>
-          {results.length > 0 ? (
-            results.map((result, index) => (
-              <ResultItem
-                key={`${result.categoryId}-${result.symbol}`}
-                onClick={() => handleResultClick(result)}
-                className={index === highlightedIndex ? 'highlighted' : ''}
-                onMouseEnter={() => setHighlightedIndex(index)} // Highlight on mouse hover
-              >
-                {result.name} ({result.symbol}) - [{result.categoryId}]
-              </ResultItem>
-            ))
-          ) : (
-            <NoResults>No units found.</NoResults>
-          )}
-        </ResultsList>
-      )}
-    </SearchWrapper>
+    <ClickAwayListener onClickAway={handleClickAway}>
+      <Box sx={{ position: 'relative', width: 250 }}>
+        <TextField
+          fullWidth
+          size="small"
+          placeholder="Search units..."
+          value={query}
+          onChange={handleInputChange}
+          onFocus={() => query && setResults(searchUnits(query)) && setIsOpen(true)} // Reopen on focus if there was a query
+          onKeyDown={handleKeyDown}
+          inputRef={inputRef}
+          variant="outlined"
+        />
+        {isOpen && (
+          <Paper 
+            elevation={3} 
+            sx={{ 
+              position: 'absolute', 
+              top: '100%', 
+              left: 0, 
+              right: 0, 
+              maxHeight: 250, 
+              overflow: 'auto', 
+              zIndex: 10,
+              mt: 0.5,
+              borderRadius: 1
+            }}
+          >
+            <List dense disablePadding>
+              {results.length > 0 ? (
+                results.map((result, index) => (
+                  <ListItem
+                    key={`${result.categoryId}-${result.symbol}`}
+                    onClick={() => handleResultClick(result)}
+                    selected={index === highlightedIndex}
+                    onMouseEnter={() => setHighlightedIndex(index)}
+                    button
+                    sx={{ py: 1 }}
+                  >
+                    <ListItemText 
+                      primary={`${result.name} (${result.symbol}) - [${result.categoryId}]`}
+                    />
+                  </ListItem>
+                ))
+              ) : (
+                <ListItem sx={{ py: 1 }}>
+                  <ListItemText 
+                    primary={
+                      <Typography color="text.secondary">
+                        No units found.
+                      </Typography>
+                    }
+                  />
+                </ListItem>
+              )}
+            </List>
+          </Paper>
+        )}
+      </Box>
+    </ClickAwayListener>
   );
 };
 

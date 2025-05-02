@@ -1,67 +1,106 @@
 import React, { createContext, useState, useContext, useEffect, useMemo } from 'react';
-import { ThemeProvider as StyledThemeProvider } from 'styled-components';
+import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
+import { createTheme } from '@mui/material/styles';
 import { getItem, setItem } from '../utils/localStorage';
 
 const THEME_STORAGE_KEY = 'appTheme';
 
-// Define theme palettes
-const lightTheme = {
-  body: '#FFF',
-  text: '#363537',
-  toggleBorder: '#FFF',
-  background: '#F8F9FA', // Lighter background
-  headerBg: '#E9ECEF', // Light gray header
-  footerBg: '#E9ECEF',
-  borderColor: '#DDD',
-  inputBg: '#FFF',
-  inputBorder: '#CCC',
-  resultBg: '#E9E9E9',
-  listBorder: '#EEE',
-  listItemHover: '#F9F9F9',
-  buttonBg: '#007BFF', // Example button color
-  buttonText: '#FFF',
-  iconColor: '#555',
-  iconHover: '#000',
-  errorText: '#DC3545',
-  clearButtonBg: '#F8D7DA',
-  clearButtonColor: '#721C24',
-  clearButtonBorder: '#F5C6CB',
-  clearButtonHover: '#F5C6CB',
-};
+// Define Material UI theme palettes
+const lightTheme = createTheme({
+  palette: {
+    mode: 'light',
+    primary: {
+      main: '#007BFF',
+      light: '#4dabf5',
+      dark: '#0056b3',
+    },
+    secondary: {
+      main: '#6c757d',
+    },
+    background: {
+      default: '#F8F9FA',
+      paper: '#fff',
+    },
+    text: {
+      primary: '#363537',
+      secondary: '#6c757d',
+    },
+    error: {
+      main: '#DC3545',
+    },
+  },
+  components: {
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 6,
+          textTransform: 'none',
+          fontWeight: 600,
+        },
+      },
+    },
+  },
+});
 
-const darkTheme = {
-  body: '#363537',
-  text: '#FAFAFA',
-  toggleBorder: '#6B8096',
-  background: '#212529', // Darker background
-  headerBg: '#343A40', // Dark gray header
-  footerBg: '#343A40',
-  borderColor: '#495057',
-  inputBg: '#495057',
-  inputBorder: '#6C757D',
-  resultBg: '#495057',
-  listBorder: '#495057',
-  listItemHover: '#343A40',
-  buttonBg: '#6C757D', // Example dark button color
-  buttonText: '#FFF',
-  iconColor: '#CED4DA',
-  iconHover: '#FFF',
-  errorText: '#F5C6CB',
-  clearButtonBg: '#5A2D2D',
-  clearButtonColor: '#F5C6CB',
-  clearButtonBorder: '#721C24',
-  clearButtonHover: '#721C24',
-};
+const darkTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: '#90CAF9',
+      light: '#BBDEFB',
+      dark: '#64B5F6',
+    },
+    secondary: {
+      main: '#CED4DA',
+    },
+    background: {
+      default: '#212529',
+      paper: '#343A40',
+    },
+    text: {
+      primary: '#FAFAFA',
+      secondary: '#ADB5BD',
+    },
+    error: {
+      main: '#F5C6CB',
+    },
+  },
+  components: {
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 6,
+          textTransform: 'none',
+          fontWeight: 600,
+        },
+      },
+    },
+  },
+});
 
 export const ThemeContext = createContext({
-  theme: 'light',
+  theme: { mode: 'light' },
   toggleTheme: () => {},
 });
 
 export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeContextProvider = ({ children }) => {
-  const [theme, setTheme] = useState(() => {
+  const [themeMode, setThemeMode] = useState(() => {
     const storedTheme = getItem(THEME_STORAGE_KEY);
     if (storedTheme) return storedTheme;
 
@@ -73,23 +112,25 @@ export const ThemeContextProvider = ({ children }) => {
   });
 
   const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
+    setThemeMode((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
   };
 
   // Save theme preference to local storage
   useEffect(() => {
-    setItem(THEME_STORAGE_KEY, theme);
-  }, [theme]);
+    setItem(THEME_STORAGE_KEY, themeMode);
+  }, [themeMode]);
 
   // Determine which theme object to use
-  const currentTheme = useMemo(() => (theme === 'light' ? lightTheme : darkTheme), [theme]);
+  const currentTheme = useMemo(() => ({
+    ...(themeMode === 'light' ? lightTheme : darkTheme),
+    mode: themeMode
+  }), [themeMode]);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      {/* Use styled-components ThemeProvider to pass theme object down */}
-      <StyledThemeProvider theme={currentTheme}>
+    <ThemeContext.Provider value={{ theme: currentTheme, toggleTheme }}>
+      <MuiThemeProvider theme={currentTheme}>
         {children}
-      </StyledThemeProvider>
+      </MuiThemeProvider>
     </ThemeContext.Provider>
   );
 }; 

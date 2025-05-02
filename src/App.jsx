@@ -1,163 +1,46 @@
-import React, { useEffect, useMemo, useState, lazy, Suspense } from 'react';
-import styled from 'styled-components';
+import React, { useEffect, useMemo, useState } from 'react';
+import { 
+  Box, 
+  Container, 
+  Grid, 
+  Divider, 
+  Typography, 
+  Paper, 
+  IconButton as MuiIconButton,
+  Card,
+  CardContent
+} from '@mui/material';
+import SwapVertIcon from '@mui/icons-material/SwapVert';
 import Layout from './components/Layout';
 import CategorySelector from './components/CategorySelector';
 import UnitSelector from './components/UnitSelector';
 import NumericInput from './components/NumericInput';
 import ConversionResult from './components/ConversionResult';
-import IconButton from './components/IconButton'; // Assuming an icon for swap
-// import { SwapIcon } from './assets/icons'; // Placeholder for swap icon
 import { useConversionContext } from './contexts/useConversionContext';
 import { ActionTypes } from './contexts/ConversionContext';
 import { convertUnit } from './utils/conversions';
 import Decimal from 'decimal.js';
-import { media } from './utils/styles'; // Import media query helper
-import HistoryList from './components/HistoryList'; // Import HistoryList
-import FavoriteButton from './components/FavoriteButton'; // Import FavoriteButton
-import FavoritesList from './components/FavoritesList'; // Import FavoritesList
-import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary'; // Import ErrorBoundary
-import { useTheme } from './contexts/ThemeContext'; // Import useTheme
-
-// Lazy load components
-// const LazyCustomUnitManager = lazy(() => import('./components/CustomUnitManager/CustomUnitManager')); // Removed
-// const LazySearchComponent = lazy(() => import('./components/SearchComponent/SearchComponent')); // Removed
-
-// Placeholder icons (moved from Layout.jsx)
-const SunIcon = () => <span>☀️</span>;
-const MoonIcon = () => <span>🌙</span>;
-
-const ConversionWrapper = styled.div`
-  padding: 1.5rem;
-  background-color: ${({ theme }) => theme.background};
-
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-
-  @media ${media.mobile} {
-    padding: 1rem;
-    height: auto;
-  }
-`;
-
-const TopRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  padding: 0 0.5rem;
-  flex-shrink: 0;
-  gap: 1rem; // Add gap for buttons
-`;
-
-const TopRowRight = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.75rem; // Gap between buttons
-`;
-
-const CategorySelectorWrapper = styled.div`
-  margin-bottom: 1rem;
-  padding: 0 0.5rem;
-  flex-shrink: 0;
-`;
-
-const InputRow = styled.div`
-  display: flex;
-  align-items: flex-end;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  padding: 0 0.5rem;
-  flex-shrink: 0;
-
-  @media ${media.mobile} {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-  }
-`;
-
-const InputField = styled.div`
-  flex-grow: 1;
-  @media ${media.mobile} {
-    width: 100%;
-  }
-`;
-
-const SwapButtonWrapper = styled.div`
-  margin-bottom: 1rem;
-
-  @media ${media.mobile} {
-    align-self: center;
-    margin-bottom: 0.5rem;
-    margin-top: 0.5rem;
-    transform: rotate(90deg);
-  }
-`;
-
-const ConversionResultWrapper = styled.div`
-  margin-top: 1rem;
-  padding: 0 0.5rem;
-  flex-shrink: 0;
-`;
-
-const CustomUnitsButtonWrapper = styled.div`
-  margin-top: 1rem;
-  padding: 0 0.5rem;
-  flex-shrink: 0;
-`;
-
-const InfoSections = styled.div`
-  display: flex;
-  gap: 1.5rem;
-  margin-top: 1.5rem;
-  padding: 1rem 0.5rem 0;
-  border-top: 1px solid ${({ theme }) => theme.listBorder};
-  flex-grow: 1;
-  overflow: hidden;
-  min-height: 100px;
-
-  & > div {
-    flex: 1;
-    overflow-y: auto;
-    max-height: 100%;
-  }
-
-  @media ${media.mobile} {
-    flex-direction: column;
-    gap: 1rem;
-    flex-grow: 0;
-    min-height: auto;
-    overflow: visible;
-    padding: 1rem 0;
-    & > div {
-      overflow-y: visible;
-      max-height: none;
-    }
-  }
-`;
+import HistoryList from './components/HistoryList';
+import FavoriteButton from './components/FavoriteButton';
+import FavoritesList from './components/FavoritesList';
+import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
+import { useTheme } from './contexts/ThemeContext';
 
 function App() {
   const { state, dispatch } = useConversionContext();
   const { categories, selectedCategory, fromUnit, toUnit, inputValue, outputValue, favorites, error } = state;
-  // const [searchResults, setSearchResults] = useState([]); // Removed search state
-  // const [isSearching, setIsSearching] = useState(false); // Removed search state
   const { theme, toggleTheme } = useTheme();
 
   // Memoize category list for selector
   const categoryOptions = useMemo(() => {
-    // Consider adding categories that ONLY have custom units?
     return Object.entries(categories).map(([id, data]) => ({
       id,
-      // Use category name if available, otherwise fallback to ID
       name: data.name || data.units[data.baseUnit]?.name || id,
       baseUnitSymbol: data.units[data.baseUnit]?.symbol || ''
     }));
   }, [categories]);
 
-  // Memoize unit lists for selectors based on selected category, including custom units
+  // Memoize unit lists for selectors based on selected category
   const currentUnits = useMemo(() => {
     const categoryData = categories[selectedCategory];
     if (!categoryData) return [];
@@ -169,7 +52,6 @@ function App() {
     }));
 
     return standardUnits.sort((a, b) => a.name.localeCompare(b.name));
-
   }, [categories, selectedCategory]);
 
   // Handle category change
@@ -249,95 +131,176 @@ function App() {
       return favorites.some(fav => fav.id === currentFavoriteId);
   }, [favorites, currentFavoriteId]);
 
-  // Handle favorite button click
+  // Handle add/remove favorite
   const handleToggleFavorite = () => {
     if (isCurrentFavorite) {
-      dispatch({ type: ActionTypes.REMOVE_FAVORITE, payload: currentFavoriteId });
+      dispatch({
+        type: ActionTypes.REMOVE_FAVORITE,
+        payload: currentFavoriteId
+      });
     } else {
-      dispatch({ type: ActionTypes.ADD_FAVORITE, payload: { category: selectedCategory, fromUnit, toUnit } });
+      dispatch({
+        type: ActionTypes.ADD_FAVORITE,
+        payload: {
+          id: currentFavoriteId,
+          category: selectedCategory,
+          fromUnit,
+          toUnit,
+          name: `${fromUnit} → ${toUnit}` // Default name
+        }
+      });
     }
   };
 
+  // Handle clicking a favorite
+  const handleFavoriteClick = (favorite) => {
+    dispatch({ type: ActionTypes.SET_CATEGORY, payload: favorite.category });
+    // Units are set in useEffect below when category changes
+    // to ensure units exist for the category
+  };
+
+  // Set units when favorite is clicked and category changes
+  useEffect(() => {
+    const foundFavorite = favorites.find(f => f.id === `${selectedCategory}-${fromUnit}-${toUnit}`);
+    if (foundFavorite) {
+      // We're already on this favorite, nothing to do
+      return;
+    }
+
+    // Find any favorite for this category
+    const categoryFavorite = favorites.find(f => f.category === selectedCategory);
+    if (categoryFavorite) {
+      dispatch({ type: ActionTypes.SET_FROM_UNIT, payload: categoryFavorite.fromUnit });
+      dispatch({ type: ActionTypes.SET_TO_UNIT, payload: categoryFavorite.toUnit });
+    } else {
+      // If no favorite for this category, set default units
+      const categoryData = categories[selectedCategory];
+      if (categoryData) {
+        const unitSymbols = Object.keys(categoryData.units);
+        if (unitSymbols.length > 0) {
+          if (unitSymbols.includes(categoryData.baseUnit)) {
+            // Use base unit as fromUnit if available
+            dispatch({ type: ActionTypes.SET_FROM_UNIT, payload: categoryData.baseUnit });
+          } else {
+            dispatch({ type: ActionTypes.SET_FROM_UNIT, payload: unitSymbols[0] });
+          }
+          // For toUnit, pick a different unit if possible
+          if (unitSymbols.length > 1) {
+            const toUnitIndex = unitSymbols[0] === categoryData.baseUnit ? 1 : 0;
+            dispatch({ type: ActionTypes.SET_TO_UNIT, payload: unitSymbols[toUnitIndex] });
+          } else {
+            dispatch({ type: ActionTypes.SET_TO_UNIT, payload: unitSymbols[0] });
+          }
+        }
+      }
+    }
+  }, [selectedCategory, categories, favorites]);
+
   return (
     <Layout>
-      <ErrorBoundary>
-        <ConversionWrapper>
-          <TopRow>
-            {/* Removed Search Component */}
-            {/* Spacer or adjust justify-content if needed */}
-            <div style={{ flexGrow: 1 }}></div> {/* Example spacer */}
-            <TopRowRight>
-                <FavoriteButton isFavorite={isCurrentFavorite} onClick={handleToggleFavorite} />
-                <IconButton onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
-                  {theme === 'light' ? <MoonIcon /> : <SunIcon />}
-                </IconButton>
-            </TopRowRight>
-          </TopRow>
-          {/* Wrap CategorySelector - Adjust selector component if needed */}
-          <CategorySelectorWrapper>
-            <CategorySelector
-              categories={categoryOptions}
-              selectedCategory={selectedCategory}
-              onChange={handleCategoryChange}
-            />
-          </CategorySelectorWrapper>
-
-          <InputRow>
-            <InputField>
+      <Container maxWidth="md" sx={{ py: 4, height: '100%' }}>
+        <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h5" component="h2">Unit Converter</Typography>
+                <FavoriteButton
+                  isFavorite={isCurrentFavorite}
+                  onClick={handleToggleFavorite}
+                  disabled={!selectedCategory || !fromUnit || !toUnit}
+                />
+              </Box>
+            
+              <CategorySelector
+                categories={categoryOptions}
+                selectedCategory={selectedCategory}
+                onChange={handleCategoryChange}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={5}>
+              <UnitSelector
+                label="From Unit"
+                units={currentUnits}
+                selectedUnit={fromUnit}
+                onChange={handleFromUnitChange}
+                id="from-unit-select"
+              />
               <NumericInput
                 label="Value"
                 id="input-value"
                 value={inputValue}
                 onChange={handleInputChange}
+                placeholder="Enter value"
               />
-            </InputField>
-            <UnitSelector
-              label="From"
-              units={currentUnits}
-              selectedUnit={fromUnit}
-              onChange={handleFromUnitChange}
-              id="from-unit"
-            />
-
-            <SwapButtonWrapper>
-              {/* Replace span with actual SwapIcon component later */}
-              <IconButton onClick={handleSwap} aria-label="Swap units">
-                <span>&#8644;</span> {/* Basic swap symbol */}
-              </IconButton>
-            </SwapButtonWrapper>
-
-            <UnitSelector
-              label="To"
-              units={currentUnits}
-              selectedUnit={toUnit}
-              onChange={handleToUnitChange}
-              id="to-unit"
-            />
-          </InputRow>
-
-          {/* Wrap ConversionResult */}
-          <ConversionResultWrapper>
-            <ConversionResult
-              result={outputValue}
-              error={error}
-              onOutputChange={handleOutputChange}
-            />
-          </ConversionResultWrapper>
-
-          {/* Removed Custom Units Button and Section */}
-          {/* <CustomUnitsButtonWrapper>
-            <button onClick={() => setShowCustomUnitsManager(true)}>Manage Custom Units</button>
-          </CustomUnitsButtonWrapper> */}
-          {/* {showCustomUnitsManager && ( ... )} */}
-
-          {/* InfoSections will now grow and handle internal scroll */}
-          <InfoSections>
-            <HistoryList />
-            <FavoritesList />
-          </InfoSections>
-
-        </ConversionWrapper>
-      </ErrorBoundary>
+            </Grid>
+            
+            <Grid item xs={12} md={2} sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              mt: { xs: 0, md: 4 }
+            }}>
+              <MuiIconButton 
+                onClick={handleSwap} 
+                aria-label="Swap units"
+                color="primary"
+                sx={{ 
+                  transform: { xs: 'rotate(90deg)', md: 'rotate(0)' }
+                }}
+              >
+                <SwapVertIcon />
+              </MuiIconButton>
+            </Grid>
+            
+            <Grid item xs={12} md={5}>
+              <UnitSelector
+                label="To Unit"
+                units={currentUnits}
+                selectedUnit={toUnit}
+                onChange={handleToUnitChange}
+                id="to-unit-select"
+              />
+              <ConversionResult
+                result={outputValue}
+                error={error}
+                onOutputChange={handleOutputChange}
+              />
+            </Grid>
+          </Grid>
+        </Paper>
+        
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                <Typography variant="h6" component="h3" gutterBottom>
+                  Favorites
+                </Typography>
+                <ErrorBoundary>
+                  <FavoritesList
+                    favorites={favorites}
+                    onFavoriteClick={handleFavoriteClick}
+                  />
+                </ErrorBoundary>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} md={6}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                <Typography variant="h6" component="h3" gutterBottom>
+                  History
+                </Typography>
+                <ErrorBoundary>
+                  <HistoryList />
+                </ErrorBoundary>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </Container>
     </Layout>
   );
 }
