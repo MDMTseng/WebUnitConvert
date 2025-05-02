@@ -58,9 +58,24 @@ const NoFavorites = styled.p`
   padding: 1rem;
 `;
 
+// Function to find unit details (copied from HistoryList - ideally move to utils)
+const getUnitDetails = (unitSymbol, categories, customUnits = []) => {
+    const customUnit = customUnits.find(u => u.symbol === unitSymbol);
+    if (customUnit) {
+      return { name: customUnit.name, name_zh: customUnit.name_zh, symbol: unitSymbol };
+    }
+    for (const categoryKey in categories) {
+      if (categories[categoryKey]?.units?.[unitSymbol]) {
+        const unitData = categories[categoryKey].units[unitSymbol];
+        return { name: unitData.name, name_zh: unitData.name_zh, symbol: unitSymbol };
+      }
+    }
+    return { name: unitSymbol, symbol: unitSymbol }; // Fallback
+  };
+
 const FavoritesList = () => {
   const { state, dispatch } = useConversionContext();
-  const { favorites, categories } = state; // Need categories for names
+  const { favorites, categories, customUnits } = state;
 
   const getCategoryName = (catId) => {
       return categories[catId]?.units[categories[catId]?.baseUnit]?.name || catId;
@@ -84,6 +99,13 @@ const FavoritesList = () => {
     dispatch({ type: ActionTypes.REMOVE_FAVORITE, payload: id });
   };
 
+  // Helper function to format unit display name
+  const getUnitDisplayName = (unitSymbol) => {
+    const details = getUnitDetails(unitSymbol, categories, customUnits);
+    if (!details) return unitSymbol; // Fallback
+    return `${details.name} ${details.name_zh ? `(${details.name_zh})` : ''}`;
+  };
+
   return (
     <FavoritesWrapper>
       <FavoritesTitle>Favorites</FavoritesTitle>
@@ -97,7 +119,8 @@ const FavoritesList = () => {
                 onClick={() => handleFavoriteClick(item)}
                 title="Click to load this conversion setup"
               >
-                {item.category}: {item.fromUnit} to {item.toUnit}
+                {/* {item.category}: */}{/* Removed category display for brevity? */}
+                 {getUnitDisplayName(item.fromUnit)} to {getUnitDisplayName(item.toUnit)}
               </FavoriteDetails>
               <IconButton
                  onClick={(e) => handleRemoveFavorite(item.id, e)}

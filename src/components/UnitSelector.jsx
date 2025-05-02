@@ -30,7 +30,7 @@ const UnitSelector = ({ label, units, selectedUnit, onChange, id }) => {
         {units && units.length > 0 ? (
           units.map((unit) => (
             <option key={unit.symbol} value={unit.symbol}>
-              {unit.name} ({unit.symbol})
+              {unit.name} {unit.name_zh ? `(${unit.name_zh})` : ''} ({unit.symbol})
             </option>
           ))
         ) : (

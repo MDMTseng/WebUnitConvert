@@ -103,10 +103,10 @@ const InfoSections = styled.div`
 
 function App() {
   const { state, dispatch } = useConversionContext();
-  const { categories, selectedCategory, fromUnit, toUnit, inputValue, outputValue, favorites, customUnits } = state;
+  const { categories, selectedCategory, fromUnit, toUnit, inputValue, outputValue, favorites, customUnits, error } = state;
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [showCustomUnitsManager, setShowCustomUnitsManager] = useState(false); // Hypothetical state
+  const [showCustomUnitsManager, setShowCustomUnitsManager] = useState(false);
 
   // Memoize category list for selector
   const categoryOptions = useMemo(() => {
@@ -128,7 +128,8 @@ function App() {
     const standardUnits = Object.entries(categoryData.units).map(([symbol, unitData]) => ({
       symbol,
       name: unitData.name,
-      isCustom: false, // Flag standard units
+      name_zh: unitData.name_zh,
+      isCustom: false,
     }));
 
     // Get custom units for the selected category
@@ -137,13 +138,14 @@ function App() {
       .map(unit => ({
         symbol: unit.symbol,
         name: unit.name,
-        isCustom: true, // Flag custom units
+        name_zh: unit.name_zh,
+        isCustom: true,
       }));
 
-    // Combine and sort (optional: sort custom units separately?)
+    // Combine and sort
     return [...standardUnits, ...categoryCustomUnits].sort((a, b) => a.name.localeCompare(b.name));
 
-  }, [categories, selectedCategory, customUnits]); // Add customUnits dependency
+  }, [categories, selectedCategory, customUnits]);
 
   // Handle category change
   const handleCategoryChange = (e) => {
@@ -159,37 +161,60 @@ function App() {
     dispatch({ type: ActionTypes.SET_TO_UNIT, payload: e.target.value });
   };
 
-  // Handle input change
+  // Handle input change from the PRIMARY input box
   const handleInputChange = (value) => {
     dispatch({ type: ActionTypes.SET_INPUT_VALUE, payload: value });
   };
 
-  // Perform conversion when relevant state changes
+  // Handle input change from the RESULT input box
+  const handleOutputChange = (newOutputValue) => {
+    if (newOutputValue === '' || newOutputValue === '-') {
+        dispatch({ type: ActionTypes.SET_INPUT_VALUE, payload: '' }); // Clear input if output is cleared
+        return;
+    }
+    try {
+        const valueDecimal = new Decimal(newOutputValue);
+        if (valueDecimal.isNaN()) {
+            // Maybe show a temporary error or just ignore?
+            // For now, let's just ignore invalid input in the result box
+            return;
+        }
+        // Perform REVERSE conversion
+        const reversedResult = convertUnit(valueDecimal, toUnit, fromUnit, customUnits);
+        if (reversedResult !== null) {
+            // Update the PRIMARY input value state
+            dispatch({ type: ActionTypes.SET_INPUT_VALUE, payload: reversedResult.toString() });
+        }
+    } catch (err) {
+        // Ignore errors from typing in result box for now
+        console.error("Reverse conversion error:", err);
+    }
+  };
+
+  // Perform FORWARD conversion when relevant state changes
   useEffect(() => {
     if (inputValue === '' || inputValue === '-') {
       dispatch({ type: ActionTypes.SET_OUTPUT_VALUE, payload: null });
-      dispatch({ type: ActionTypes.SET_ERROR, payload: null }); // Clear error on valid empty input
+      dispatch({ type: ActionTypes.SET_ERROR, payload: null });
       return;
     }
-
     try {
       const valueDecimal = new Decimal(inputValue);
       if (valueDecimal.isNaN()) {
         dispatch({ type: ActionTypes.SET_ERROR, payload: 'Invalid input value' });
         return;
       }
-
-      // Pass customUnits array to the conversion function
       const result = convertUnit(valueDecimal, fromUnit, toUnit, customUnits);
-
       if (result === null) {
-        dispatch({ type: ActionTypes.SET_ERROR, payload: 'Conversion failed (check units)' });
+        dispatch({ type: ActionTypes.SET_ERROR, payload: 'Conversion failed' });
       } else {
+        // This is where the forward conversion result is set
         dispatch({ type: ActionTypes.SET_OUTPUT_VALUE, payload: result.toString() });
+        // Error is cleared automatically in the reducer when output is set
       }
     } catch (err) {
-      console.error("Conversion error:", err);
-      dispatch({ type: ActionTypes.SET_ERROR, payload: 'An unexpected error occurred' });
+      console.error("Forward conversion error:", err);
+      dispatch({ type: ActionTypes.SET_ERROR, payload: 'Calculation error' });
     }
   }, [inputValue, fromUnit, toUnit, dispatch, customUnits]);
 
@@ -310,7 +335,11 @@ function App() {
             />
           </InputRow>
 
-          <ConversionResult result={outputValue} error={state.error} />
+          <ConversionResult
+            result={outputValue}
+            error={error}
+            onOutputChange={handleOutputChange}
+          />
 
           {/* Button to open Custom Unit Manager (Hypothetical) */}
           <button onClick={() => setShowCustomUnitsManager(true)}>Manage Custom Units</button>

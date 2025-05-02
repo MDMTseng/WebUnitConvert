@@ -1,42 +1,45 @@
 import React from 'react';
 import styled from 'styled-components';
+import NumericInput from './NumericInput';
 
 const ResultWrapper = styled.div`
   margin-top: 1rem;
-  padding: 1rem;
-  background-color: ${({ theme }) => theme.resultBg};
-  border-radius: 4px;
-  min-height: 3em; /* Ensure space even when empty */
-  word-wrap: break-word; /* Prevent long numbers from overflowing */
-`;
-
-const ResultText = styled.p`
-  font-size: 1.2rem;
-  font-weight: bold;
-  margin: 0;
-  color: ${({ theme }) => theme.text};
+  /* No background/padding needed if input handles it */
 `;
 
 const ErrorText = styled.p`
   color: ${({ theme }) => theme.errorText};
   font-weight: bold;
   margin: 0;
+  padding: 0.75rem 0.5rem;
 `;
 
 const PlaceholderText = styled.p`
     margin: 0;
     color: ${({ theme }) => theme.text}88;
+    padding: 0.75rem 0.5rem;
 `;
 
-const ConversionResult = ({ result, error }) => {
+const ConversionResult = ({ result, error, onOutputChange, readOnly = false }) => {
+  const handleChange = (newValue) => {
+    if (onOutputChange) {
+      onOutputChange(newValue);
+    }
+  };
+
   return (
     <ResultWrapper>
       {error ? (
         <ErrorText>Error: {error}</ErrorText>
-      ) : result !== null && result !== undefined ? (
-        <ResultText>{result}</ResultText>
       ) : (
-        <PlaceholderText>Result will appear here</PlaceholderText>
+        <NumericInput
+          label="Result"
+          id="output-value"
+          value={result ?? ''}
+          onChange={handleChange}
+          placeholder="Conversion result"
+          readOnly={readOnly}
+        />
       )}
     </ResultWrapper>
   );
