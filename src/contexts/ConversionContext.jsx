@@ -61,24 +61,34 @@ const conversionReducer = (state = initialState, action) => {
       // Reset output/error when input changes
       return { ...state, inputValue: action.payload, outputValue: null, error: null };
     case ActionTypes.SET_OUTPUT_VALUE: {
-      // When output is set successfully, add the conversion to history
-      const newHistoryEntry = {
-        id: Date.now(), // Simple unique ID using timestamp
-        category: state.selectedCategory,
-        fromUnit: state.fromUnit,
-        toUnit: state.toUnit,
-        inputValue: state.inputValue,
-        outputValue: action.payload, // The calculated output
-        timestamp: new Date().toISOString(),
-      };
-      // Add to beginning and limit length
-      const updatedHistory = [newHistoryEntry, ...state.history].slice(0, MAX_HISTORY_LENGTH);
-
+      // Only add to history if there's a valid input value and output value
+      if (state.inputValue && state.inputValue !== '-' && action.payload) {
+        // When output is set successfully, add the conversion to history
+        const newHistoryEntry = {
+          id: Date.now(), // Simple unique ID using timestamp
+          category: state.selectedCategory,
+          fromUnit: state.fromUnit,
+          toUnit: state.toUnit,
+          inputValue: state.inputValue,
+          outputValue: action.payload, // The calculated output
+          timestamp: new Date().toISOString(),
+        };
+        // Add to beginning and limit length
+        const updatedHistory = [newHistoryEntry, ...state.history].slice(0, MAX_HISTORY_LENGTH);
+        
+        return {
+          ...state,
+          outputValue: action.payload,
+          error: null,
+          history: updatedHistory, // Update history
+        };
+      }
+      
+      // If no valid input or output, just update output without adding to history
       return {
         ...state,
         outputValue: action.payload,
-        error: null,
-        history: updatedHistory, // Update history
+        error: null
       };
     }
     case ActionTypes.SET_ERROR:

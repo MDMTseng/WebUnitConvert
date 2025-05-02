@@ -39,6 +39,14 @@ export default defineConfig({
           }
         ]
       },
+      workbox: {
+        // Option 1: Increase the maximum file size for precaching
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // 4 MB
+        
+        // Option 2: Exclude stats.html from precaching
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        globIgnores: ['**/stats.html']
+      }
     })
   ],
   build: {

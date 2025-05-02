@@ -8,9 +8,11 @@ import {
   Paper, 
   IconButton as MuiIconButton,
   Card,
-  CardContent
+  CardContent,
+  Stack
 } from '@mui/material';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
+import { Brightness4, Brightness7 } from '@mui/icons-material';
 import Layout from './components/Layout';
 import CategorySelector from './components/CategorySelector';
 import UnitSelector from './components/UnitSelector';
@@ -30,6 +32,7 @@ function App() {
   const { state, dispatch } = useConversionContext();
   const { categories, selectedCategory, fromUnit, toUnit, inputValue, outputValue, favorites, error } = state;
   const { theme, toggleTheme } = useTheme();
+  const isDarkMode = theme.mode === 'dark';
 
   // Memoize category list for selector
   const categoryOptions = useMemo(() => {
@@ -105,6 +108,14 @@ function App() {
         dispatch({ type: ActionTypes.SET_ERROR, payload: 'Invalid input value' });
         return;
       }
+      
+      // Only proceed with conversion if we have a meaningful value
+      if (valueDecimal.isZero() && !inputValue.includes('.')) {
+        // Don't record history for plain zero inputs (0) without decimal points
+        dispatch({ type: ActionTypes.SET_OUTPUT_VALUE, payload: '0' });
+        return;
+      }
+      
       // Call convertUnit without customUnits
       const result = convertUnit(valueDecimal, fromUnit, toUnit);
       if (result === null) {
@@ -198,17 +209,38 @@ function App() {
 
   return (
     <Layout>
-      <Container maxWidth="md" sx={{ py: 4, height: '100%' }}>
-        <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-          <Grid container spacing={3}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        height: '100%',
+        overflow: 'auto',
+        gap: 1
+      }}>
+        <Paper elevation={2} sx={{ p: { xs: 1.5, sm: 2 } }}>
+          <Grid container spacing={1.5}>
             <Grid item xs={12}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h5" component="h2">Unit Converter</Typography>
-                <FavoriteButton
-                  isFavorite={isCurrentFavorite}
-                  onClick={handleToggleFavorite}
-                  disabled={!selectedCategory || !fromUnit || !toUnit}
-                />
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                mb: 0.5 
+              }}>
+                <Typography variant="h5" component="h1">Unit Converter</Typography>
+                <Stack direction="row" spacing={0.5}>
+                  <MuiIconButton 
+                    onClick={toggleTheme} 
+                    color="primary" 
+                    size="small"
+                    aria-label="toggle dark/light mode"
+                  >
+                    {isDarkMode ? <Brightness7 /> : <Brightness4 />}
+                  </MuiIconButton>
+                  <FavoriteButton
+                    isFavorite={isCurrentFavorite}
+                    onClick={handleToggleFavorite}
+                    disabled={!selectedCategory || !fromUnit || !toUnit}
+                  />
+                </Stack>
               </Box>
             
               <CategorySelector
@@ -239,12 +271,13 @@ function App() {
               display: 'flex', 
               justifyContent: 'center', 
               alignItems: 'center',
-              mt: { xs: 0, md: 4 }
+              mt: { xs: 0, md: 2 }
             }}>
               <MuiIconButton 
                 onClick={handleSwap} 
                 aria-label="Swap units"
                 color="primary"
+                size="small"
                 sx={{ 
                   transform: { xs: 'rotate(90deg)', md: 'rotate(0)' }
                 }}
@@ -261,8 +294,8 @@ function App() {
                 onChange={handleToUnitChange}
                 id="to-unit-select"
               />
-              <ConversionResult
-                result={outputValue}
+              <ConversionResult 
+                result={outputValue} 
                 error={error}
                 onOutputChange={handleOutputChange}
               />
@@ -270,37 +303,38 @@ function App() {
           </Grid>
         </Paper>
         
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="h6" component="h3" gutterBottom>
-                  Favorites
-                </Typography>
-                <ErrorBoundary>
-                  <FavoritesList
-                    favorites={favorites}
-                    onFavoriteClick={handleFavoriteClick}
-                  />
-                </ErrorBoundary>
-              </CardContent>
-            </Card>
-          </Grid>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', md: 'row' }, 
+          gap: 1,
+          flexGrow: 1,
+          minHeight: 0
+        }}>
+          <Paper sx={{ 
+            flex: 1, 
+            p: 1.5,
+            display: 'flex', 
+            flexDirection: 'column',
+            overflow: 'hidden'
+          }}>
+            <ErrorBoundary fallback={<div>Error loading favorites</div>}>
+              <FavoritesList />
+            </ErrorBoundary>
+          </Paper>
           
-          <Grid item xs={12} md={6}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="h6" component="h3" gutterBottom>
-                  History
-                </Typography>
-                <ErrorBoundary>
-                  <HistoryList />
-                </ErrorBoundary>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      </Container>
+          <Paper sx={{ 
+            flex: 1, 
+            p: 1.5,
+            display: 'flex', 
+            flexDirection: 'column',
+            overflow: 'hidden'
+          }}>
+            <ErrorBoundary fallback={<div>Error loading history</div>}>
+              <HistoryList />
+            </ErrorBoundary>
+          </Paper>
+        </Box>
+      </Box>
     </Layout>
   );
 }

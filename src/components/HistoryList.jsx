@@ -6,12 +6,11 @@ import {
   List, 
   ListItem, 
   ListItemText,
-  Paper
+  IconButton
 } from '@mui/material';
 import ClearIcon from '@mui/icons-material/ClearAll';
 import { useConversionContext } from '../contexts/useConversionContext';
 import { ActionTypes } from '../contexts/ConversionContext';
-import IconButton from './IconButton';
 
 // Function to find unit details (Simplified)
 const getUnitDetails = (unitSymbol, categories) => {
@@ -64,41 +63,53 @@ const HistoryList = () => {
   };
 
   return (
-    <Box>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      height: '100%',
+      overflow: 'hidden' 
+    }}>
       <Box sx={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        mb: 2
+        mb: 0.5,
+        flexShrink: 0
       }}>
-        <Typography variant="h6" component="h3">
+        <Typography variant="subtitle1" component="h3">
           History
         </Typography>
         {history.length > 0 && (
-          <Button 
-            variant="outlined" 
+          <IconButton 
             size="small" 
             color="error" 
             onClick={handleClearHistory}
-            startIcon={<ClearIcon />}
+            aria-label="Clear history"
           >
-            Clear
-          </Button>
+            <ClearIcon fontSize="small" />
+          </IconButton>
         )}
       </Box>
       
       {history.length === 0 ? (
         <Typography 
+          variant="body2"
           sx={{ 
             color: 'text.secondary', 
             textAlign: 'center', 
-            py: 2 
+            py: 1
           }}
         >
           No history yet.
         </Typography>
       ) : (
-        <Paper variant="outlined" sx={{ maxHeight: 200, overflow: 'auto' }}>
+        <Box sx={{ 
+          overflow: 'auto', 
+          flexGrow: 1, 
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 1
+        }}>
           <List dense disablePadding>
             {history.map((item) => (
               <ListItem 
@@ -107,6 +118,7 @@ const HistoryList = () => {
                 button
                 divider={history.indexOf(item) !== history.length - 1}
                 sx={{ 
+                  py: 0.5,
                   '&:hover': { 
                     bgcolor: 'action.hover'
                   }
@@ -114,7 +126,11 @@ const HistoryList = () => {
               >
                 <ListItemText 
                   primary={
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      fontSize: '0.875rem'
+                    }}>
                       <span>
                         {item.inputValue} {getUnitDisplayName(item.fromUnit)} → {item.outputValue} {getUnitDisplayName(item.toUnit)}
                       </span>
@@ -127,7 +143,7 @@ const HistoryList = () => {
               </ListItem>
             ))}
           </List>
-        </Paper>
+        </Box>
       )}
     </Box>
   );

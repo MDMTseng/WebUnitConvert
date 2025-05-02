@@ -6,8 +6,7 @@ import {
   ListItem, 
   ListItemText, 
   ListItemSecondaryAction,
-  Paper,
-  IconButton as MuiIconButton
+  IconButton
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useConversionContext } from '../contexts/useConversionContext';
@@ -59,23 +58,35 @@ const FavoritesList = () => {
   };
 
   return (
-    <Box>
-      <Typography variant="h6" component="h3" sx={{ mb: 2 }}>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column',
+      height: '100%',
+      overflow: 'hidden' 
+    }}>
+      <Typography variant="subtitle1" component="h3" sx={{ mb: 0.5, flexShrink: 0 }}>
         Favorites
       </Typography>
       
       {favorites.length === 0 ? (
         <Typography 
+          variant="body2"
           sx={{ 
             color: 'text.secondary', 
             textAlign: 'center', 
-            py: 2 
+            py: 1
           }}
         >
           No favorites saved yet.
         </Typography>
       ) : (
-        <Paper variant="outlined" sx={{ maxHeight: 200, overflow: 'auto' }}>
+        <Box sx={{ 
+          overflow: 'auto', 
+          flexGrow: 1,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 1
+        }}>
           <List dense disablePadding>
             {favorites.map((item) => (
               <ListItem 
@@ -83,26 +94,33 @@ const FavoritesList = () => {
                 button 
                 onClick={() => handleFavoriteClick(item)}
                 divider={favorites.indexOf(item) !== favorites.length - 1}
-                sx={{ pr: 7 }} // Leave space for delete button
+                sx={{ 
+                  py: 0.5,
+                  pr: 6 // Leave space for delete button 
+                }}
               >
                 <ListItemText 
-                  primary={`${getUnitDisplayName(item.fromUnit)} to ${getUnitDisplayName(item.toUnit)}`}
+                  primary={
+                    <Box sx={{ fontSize: '0.875rem' }}>
+                      {`${getUnitDisplayName(item.fromUnit)} to ${getUnitDisplayName(item.toUnit)}`}
+                    </Box>
+                  }
                 />
                 <ListItemSecondaryAction>
-                  <MuiIconButton
+                  <IconButton
                     edge="end"
                     size="small"
                     onClick={(e) => handleRemoveFavorite(item.id, e)}
                     aria-label={`Remove favorite ${item.fromUnit} to ${item.toUnit}`}
                     color="error"
                   >
-                    <DeleteIcon />
-                  </MuiIconButton>
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
                 </ListItemSecondaryAction>
               </ListItem>
             ))}
           </List>
-        </Paper>
+        </Box>
       )}
     </Box>
   );
