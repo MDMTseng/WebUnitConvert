@@ -78,6 +78,9 @@ function App() {
 
   // Handle input change from the RESULT input box
   const handleOutputChange = (newOutputValue) => {
+    // Already set by NumericInput component, but just to be safe:
+    dispatch({ type: ActionTypes.SET_USER_INPUT, payload: true });
+    
     if (newOutputValue === '' || newOutputValue === '-') {
         dispatch({ type: ActionTypes.SET_INPUT_VALUE, payload: '' });
         return;

@@ -1,16 +1,22 @@
 import React from 'react';
 import { TextField, Box, IconButton, InputAdornment } from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
+import { useConversionContext } from '../contexts/useConversionContext';
+import { ActionTypes } from '../contexts/ConversionContext';
 
 const NumericInput = ({ label, value, onChange, id, placeholder = 'Enter value' }) => {
+  const { dispatch } = useConversionContext();
+
   const handleChange = (e) => {
     const val = e.target.value;
     if (val === '' || val === '-' || /^-?\d*\.?\d*$/.test(val)) {
+      dispatch({ type: ActionTypes.SET_USER_INPUT, payload: true });
       onChange(val);
     }
   };
 
   const handleClear = () => {
+    dispatch({ type: ActionTypes.SET_USER_INPUT, payload: true });
     onChange('');
   };
 

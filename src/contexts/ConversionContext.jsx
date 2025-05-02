@@ -20,6 +20,8 @@ const initialState = {
   history: [],
   favorites: [],
   pendingHistoryEntry: null, // To store pending history entry during debounce
+  selectingFromHistory: false, // Flag to track when user selects from history
+  isUserInput: false, // Track if input change is from user vs. programmatic
 };
 
 // --- Action Types ---
@@ -35,6 +37,8 @@ const ActionTypes = {
   CLEAR_HISTORY: 'CLEAR_HISTORY',
   LOAD_HISTORY: 'LOAD_HISTORY',
   SET_PENDING_HISTORY: 'SET_PENDING_HISTORY', // New action to store pending entry
+  SET_SELECTING_FROM_HISTORY: 'SET_SELECTING_FROM_HISTORY', // Flag for history selection
+  SET_USER_INPUT: 'SET_USER_INPUT', // Track if input is from user
   // Favorites Actions
   ADD_FAVORITE: 'ADD_FAVORITE',
   REMOVE_FAVORITE: 'REMOVE_FAVORITE',
@@ -55,17 +59,47 @@ const conversionReducer = (state = initialState, action) => {
         selectedCategory: action.payload,
         fromUnit: newCategoryUnits[0], // Default to first unit in new category
         toUnit: newCategoryUnits[1] || newCategoryUnits[0], // Default to second or first
+        selectingFromHistory: state.selectingFromHistory, // Keep the selection flag state
       };
     case ActionTypes.SET_FROM_UNIT:
       return { ...state, fromUnit: action.payload };
     case ActionTypes.SET_TO_UNIT:
       return { ...state, toUnit: action.payload };
+    case ActionTypes.SET_USER_INPUT:
+      return { 
+        ...state, 
+        isUserInput: action.payload,
+        // If this is a user input (true), clear the selecting from history flag
+        selectingFromHistory: action.payload ? false : state.selectingFromHistory
+      };
     case ActionTypes.SET_INPUT_VALUE:
       // Reset output/error when input changes
-      return { ...state, inputValue: action.payload, outputValue: null, error: null };
+      return { 
+        ...state, 
+        inputValue: action.payload, 
+        outputValue: null, 
+        error: null,
+        // Only reset selectingFromHistory if this is a user input
+        // AND the user is not in the process of selecting from history
+        selectingFromHistory: state.isUserInput ? false : state.selectingFromHistory 
+      };
+    case ActionTypes.SET_SELECTING_FROM_HISTORY:
+      return {
+        ...state,
+        selectingFromHistory: action.payload,
+        // When selecting from history, always set isUserInput to false
+        isUserInput: action.payload ? false : state.isUserInput
+      };
     case ActionTypes.SET_OUTPUT_VALUE: {
-      // Only prepare history entry if there's a valid input and output
-      if (state.inputValue && state.inputValue !== '-' && action.payload) {
+      // Only prepare history entry if:
+      // 1. There's a valid input and output
+      // 2. We're not currently selecting from history
+      // 3. The input change came from the user (isUserInput is true)
+      if (state.inputValue && 
+          state.inputValue !== '-' && 
+          action.payload && 
+          !state.selectingFromHistory &&
+          state.isUserInput) {
         // Create the potential history entry but don't add it immediately
         const newHistoryEntry = {
           id: Date.now(), // Simple unique ID using timestamp
@@ -85,11 +119,12 @@ const conversionReducer = (state = initialState, action) => {
         };
       }
       
-      // If no valid input or output, just update output without adding to history
+      // If no valid input or output or selecting from history, 
+      // just update output without adding to history
       return {
         ...state,
         outputValue: action.payload,
-        error: null
+        error: null,
       };
     }
     case ActionTypes.ADD_TO_HISTORY: {
@@ -118,6 +153,8 @@ const conversionReducer = (state = initialState, action) => {
         outputValue: null, // Reset output, needs recalculation
         error: null,
         pendingHistoryEntry: null, // Clear any pending entries
+        selectingFromHistory: false, // Reset history selection flag
+        isUserInput: false, // This is a programmatic change, not user input
       };
     }
     case ActionTypes.CLEAR_HISTORY:

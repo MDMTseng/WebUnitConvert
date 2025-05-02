@@ -33,6 +33,10 @@ const FavoritesList = () => {
   }
 
   const handleFavoriteClick = (item) => {
+    // Set flag to indicate we're selecting from favorites/history
+    // This will prevent adding entries to history when selecting a favorite
+    dispatch({ type: ActionTypes.SET_SELECTING_FROM_HISTORY, payload: true });
+    
     // Restore state from favorite
     dispatch({ type: ActionTypes.SET_CATEGORY, payload: item.category });
     // Use timeout again for simplicity, ideally a dedicated action

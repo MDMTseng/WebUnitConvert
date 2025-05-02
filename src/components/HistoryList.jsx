@@ -28,6 +28,10 @@ const HistoryList = () => {
   const { history, categories } = state;
 
   const handleHistoryClick = (item) => {
+    // Set flag to indicate we're selecting from history
+    // This will prevent adding duplicate entries to history
+    dispatch({ type: ActionTypes.SET_SELECTING_FROM_HISTORY, payload: true });
+    
     // Restore state from history
     dispatch({ type: ActionTypes.SET_CATEGORY, payload: item.category });
     // Need timeout to allow category state update before unit update
