@@ -10,7 +10,8 @@ const MoonIcon = () => <span>🌙</span>;
 const AppWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background-color: ${({ theme }) => theme.background};
 `;
 
@@ -25,7 +26,7 @@ const Header = styled.header`
 
 const Main = styled.main`
   flex-grow: 1;
-  padding: 1rem;
+  display: flex;
 `;
 
 const Footer = styled.footer`
@@ -41,10 +42,7 @@ const Layout = ({ children }) => {
   return (
     <AppWrapper>
       <Header>
-        <h1>Unit Converter</h1>
-        <IconButton onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
-          {theme === 'light' ? <MoonIcon /> : <SunIcon />}
-        </IconButton>
+        {/* <h1>Unit Converter</h1> */}
       </Header>
       <Main>{children}</Main>
       <Footer>

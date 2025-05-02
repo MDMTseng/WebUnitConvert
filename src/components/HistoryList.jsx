@@ -6,22 +6,15 @@ import { media } from '../utils/styles';
 import IconButton from './IconButton';
 // import { ClearIcon } from '../assets/icons'; // Placeholder
 
-// Function to find unit details (including name_zh) from registry
-// Needs access to the full categories object from context state
-const getUnitDetails = (unitSymbol, categories, customUnits = []) => {
-    // Check custom units first
-    const customUnit = customUnits.find(u => u.symbol === unitSymbol);
-    if (customUnit) {
-      return { name: customUnit.name, name_zh: customUnit.name_zh, symbol: unitSymbol };
-    }
-    // Check standard registry
+// Function to find unit details (Simplified)
+const getUnitDetails = (unitSymbol, categories) => {
     for (const categoryKey in categories) {
       if (categories[categoryKey]?.units?.[unitSymbol]) {
         const unitData = categories[categoryKey].units[unitSymbol];
         return { name: unitData.name, name_zh: unitData.name_zh, symbol: unitSymbol };
       }
     }
-    return { name: unitSymbol, symbol: unitSymbol }; // Fallback to symbol if not found
+    return { name: unitSymbol, symbol: unitSymbol }; // Fallback
   };
 
 const ClearIcon = () => <span>🧹</span>; // Placeholder
@@ -105,7 +98,7 @@ const NoHistory = styled.p`
 
 const HistoryList = () => {
   const { state, dispatch } = useConversionContext();
-  const { history, categories, customUnits } = state;
+  const { history, categories } = state;
 
   const handleHistoryClick = (item) => {
     // Restore state from history
@@ -137,8 +130,8 @@ const HistoryList = () => {
 
   // Helper function to format unit display name
   const getUnitDisplayName = (unitSymbol) => {
-    const details = getUnitDetails(unitSymbol, categories, customUnits);
-    if (!details) return unitSymbol; // Fallback
+    const details = getUnitDetails(unitSymbol, categories);
+    if (!details) return unitSymbol;
     return `${details.name} ${details.name_zh ? `(${details.name_zh})` : ''}`;
   };
 

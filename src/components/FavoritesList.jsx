@@ -58,12 +58,8 @@ const NoFavorites = styled.p`
   padding: 1rem;
 `;
 
-// Function to find unit details (copied from HistoryList - ideally move to utils)
-const getUnitDetails = (unitSymbol, categories, customUnits = []) => {
-    const customUnit = customUnits.find(u => u.symbol === unitSymbol);
-    if (customUnit) {
-      return { name: customUnit.name, name_zh: customUnit.name_zh, symbol: unitSymbol };
-    }
+// Function to find unit details (Simplified)
+const getUnitDetails = (unitSymbol, categories) => {
     for (const categoryKey in categories) {
       if (categories[categoryKey]?.units?.[unitSymbol]) {
         const unitData = categories[categoryKey].units[unitSymbol];
@@ -75,7 +71,7 @@ const getUnitDetails = (unitSymbol, categories, customUnits = []) => {
 
 const FavoritesList = () => {
   const { state, dispatch } = useConversionContext();
-  const { favorites, categories, customUnits } = state;
+  const { favorites, categories } = state;
 
   const getCategoryName = (catId) => {
       return categories[catId]?.units[categories[catId]?.baseUnit]?.name || catId;
@@ -101,7 +97,8 @@ const FavoritesList = () => {
 
   // Helper function to format unit display name
   const getUnitDisplayName = (unitSymbol) => {
-    const details = getUnitDetails(unitSymbol, categories, customUnits);
+    // Pass only categories now
+    const details = getUnitDetails(unitSymbol, categories);
     if (!details) return unitSymbol; // Fallback
     return `${details.name} ${details.name_zh ? `(${details.name_zh})` : ''}`;
   };

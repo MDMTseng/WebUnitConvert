@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback, lazy, Suspense } from 'react';
+import React, { useEffect, useMemo, useState, lazy, Suspense } from 'react';
 import styled from 'styled-components';
 import Layout from './components/Layout';
 import CategorySelector from './components/CategorySelector';
@@ -15,27 +15,30 @@ import { media } from './utils/styles'; // Import media query helper
 import HistoryList from './components/HistoryList'; // Import HistoryList
 import FavoriteButton from './components/FavoriteButton'; // Import FavoriteButton
 import FavoritesList from './components/FavoritesList'; // Import FavoritesList
-import { searchUnits, debounce } from './utils/searchUtils'; // Import search utils
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary'; // Import ErrorBoundary
+import { useTheme } from './contexts/ThemeContext'; // Import useTheme
 
 // Lazy load components
-const LazyCustomUnitManager = lazy(() => import('./components/CustomUnitManager/CustomUnitManager'));
-const LazySearchComponent = lazy(() => import('./components/SearchComponent/SearchComponent'));
+// const LazyCustomUnitManager = lazy(() => import('./components/CustomUnitManager/CustomUnitManager')); // Removed
+// const LazySearchComponent = lazy(() => import('./components/SearchComponent/SearchComponent')); // Removed
+
+// Placeholder icons (moved from Layout.jsx)
+const SunIcon = () => <span>☀️</span>;
+const MoonIcon = () => <span>🌙</span>;
 
 const ConversionWrapper = styled.div`
-  max-width: 600px;
-  margin: 2rem auto;
   padding: 1.5rem;
-  border: 1px solid ${({ theme }) => theme.borderColor};
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   background-color: ${({ theme }) => theme.background};
 
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+
   @media ${media.mobile} {
-    margin: 1rem;
     padding: 1rem;
-    border: none;
-    box-shadow: none;
+    height: auto;
   }
 `;
 
@@ -44,11 +47,21 @@ const TopRow = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+  padding: 0 0.5rem;
+  flex-shrink: 0;
+  gap: 1rem; // Add gap for buttons
+`;
 
-  h2 {
-    margin: 0;
-    color: ${({ theme }) => theme.text};
-  }
+const TopRowRight = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem; // Gap between buttons
+`;
+
+const CategorySelectorWrapper = styled.div`
+  margin-bottom: 1rem;
+  padding: 0 0.5rem;
+  flex-shrink: 0;
 `;
 
 const InputRow = styled.div`
@@ -56,57 +69,82 @@ const InputRow = styled.div`
   align-items: flex-end;
   gap: 1rem;
   margin-bottom: 1rem;
+  padding: 0 0.5rem;
+  flex-shrink: 0;
 
   @media ${media.mobile} {
-    flex-direction: column; // Stack vertically on mobile
-    align-items: stretch; // Stretch items to full width
-    gap: 0.5rem; // Reduce gap for stacked layout
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
   }
 `;
 
 const InputField = styled.div`
   flex-grow: 1;
   @media ${media.mobile} {
-    width: 100%; // Ensure full width when stacked
+    width: 100%;
   }
 `;
 
 const SwapButtonWrapper = styled.div`
-  margin-bottom: 1rem; /* Align with bottom of inputs on desktop */
+  margin-bottom: 1rem;
 
   @media ${media.mobile} {
-    align-self: center; // Center swap button when stacked
+    align-self: center;
     margin-bottom: 0.5rem;
     margin-top: 0.5rem;
-    // Rotate icon for vertical layout?
     transform: rotate(90deg);
   }
 `;
 
-// New styled component for History/Favorites section
+const ConversionResultWrapper = styled.div`
+  margin-top: 1rem;
+  padding: 0 0.5rem;
+  flex-shrink: 0;
+`;
+
+const CustomUnitsButtonWrapper = styled.div`
+  margin-top: 1rem;
+  padding: 0 0.5rem;
+  flex-shrink: 0;
+`;
+
 const InfoSections = styled.div`
   display: flex;
-  gap: 2rem;
-  margin-top: 2rem;
-  padding-top: 1rem;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  padding: 1rem 0.5rem 0;
   border-top: 1px solid ${({ theme }) => theme.listBorder};
+  flex-grow: 1;
+  overflow: hidden;
+  min-height: 100px;
 
-  & > div { // Target direct children (HistoryWrapper, FavoritesWrapper)
-    flex: 1; // Each section takes half the space
+  & > div {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 100%;
   }
 
   @media ${media.mobile} {
     flex-direction: column;
     gap: 1rem;
+    flex-grow: 0;
+    min-height: auto;
+    overflow: visible;
+    padding: 1rem 0;
+    & > div {
+      overflow-y: visible;
+      max-height: none;
+    }
   }
 `;
 
 function App() {
   const { state, dispatch } = useConversionContext();
-  const { categories, selectedCategory, fromUnit, toUnit, inputValue, outputValue, favorites, customUnits, error } = state;
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showCustomUnitsManager, setShowCustomUnitsManager] = useState(false);
+  const { categories, selectedCategory, fromUnit, toUnit, inputValue, outputValue, favorites, error } = state;
+  // const [searchResults, setSearchResults] = useState([]); // Removed search state
+  // const [isSearching, setIsSearching] = useState(false); // Removed search state
+  const { theme, toggleTheme } = useTheme();
 
   // Memoize category list for selector
   const categoryOptions = useMemo(() => {
@@ -124,28 +162,15 @@ function App() {
     const categoryData = categories[selectedCategory];
     if (!categoryData) return [];
 
-    // Get standard units for the selected category
     const standardUnits = Object.entries(categoryData.units).map(([symbol, unitData]) => ({
       symbol,
       name: unitData.name,
       name_zh: unitData.name_zh,
-      isCustom: false,
     }));
 
-    // Get custom units for the selected category
-    const categoryCustomUnits = customUnits
-      .filter(unit => unit.categoryId === selectedCategory)
-      .map(unit => ({
-        symbol: unit.symbol,
-        name: unit.name,
-        name_zh: unit.name_zh,
-        isCustom: true,
-      }));
+    return standardUnits.sort((a, b) => a.name.localeCompare(b.name));
 
-    // Combine and sort
-    return [...standardUnits, ...categoryCustomUnits].sort((a, b) => a.name.localeCompare(b.name));
-
-  }, [categories, selectedCategory, customUnits]);
+  }, [categories, selectedCategory]);
 
   // Handle category change
   const handleCategoryChange = (e) => {
@@ -169,24 +194,18 @@ function App() {
   // Handle input change from the RESULT input box
   const handleOutputChange = (newOutputValue) => {
     if (newOutputValue === '' || newOutputValue === '-') {
-        dispatch({ type: ActionTypes.SET_INPUT_VALUE, payload: '' }); // Clear input if output is cleared
+        dispatch({ type: ActionTypes.SET_INPUT_VALUE, payload: '' });
         return;
     }
     try {
         const valueDecimal = new Decimal(newOutputValue);
-        if (valueDecimal.isNaN()) {
-            // Maybe show a temporary error or just ignore?
-            // For now, let's just ignore invalid input in the result box
-            return;
-        }
-        // Perform REVERSE conversion
-        const reversedResult = convertUnit(valueDecimal, toUnit, fromUnit, customUnits);
+        if (valueDecimal.isNaN()) return;
+        // Perform REVERSE conversion without custom units
+        const reversedResult = convertUnit(valueDecimal, toUnit, fromUnit);
         if (reversedResult !== null) {
-            // Update the PRIMARY input value state
             dispatch({ type: ActionTypes.SET_INPUT_VALUE, payload: reversedResult.toString() });
         }
     } catch (err) {
-        // Ignore errors from typing in result box for now
         console.error("Reverse conversion error:", err);
     }
   };
@@ -204,7 +223,8 @@ function App() {
         dispatch({ type: ActionTypes.SET_ERROR, payload: 'Invalid input value' });
         return;
       }
-      const result = convertUnit(valueDecimal, fromUnit, toUnit, customUnits);
+      // Call convertUnit without customUnits
+      const result = convertUnit(valueDecimal, fromUnit, toUnit);
       if (result === null) {
         dispatch({ type: ActionTypes.SET_ERROR, payload: 'Conversion failed' });
       } else {
@@ -216,7 +236,7 @@ function App() {
       console.error("Forward conversion error:", err);
       dispatch({ type: ActionTypes.SET_ERROR, payload: 'Calculation error' });
     }
-  }, [inputValue, fromUnit, toUnit, dispatch, customUnits]);
+  }, [inputValue, fromUnit, toUnit, dispatch]);
 
   // Handle swap
   const handleSwap = () => {
@@ -238,69 +258,29 @@ function App() {
     }
   };
 
-  // Debounced search handler
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const debouncedSearch = useCallback(
-    debounce((query) => {
-      if (!query) {
-        setSearchResults([]);
-        setIsSearching(false);
-        return;
-      }
-      setIsSearching(true);
-      // Simulate async search if needed, otherwise direct call:
-      const results = searchUnits(categories, query);
-      setSearchResults(results);
-      setIsSearching(false);
-    }, 300), // 300ms delay
-    [categories] // Dependency: re-create debounce if categories change
-  );
-
-  // Handler passed to SearchComponent
-  const handleSearch = (query) => {
-    debouncedSearch(query);
-  };
-
-  // Handle selecting a result from search
-  const handleResultSelect = (result) => {
-    if (!result) return;
-
-    dispatch({ type: ActionTypes.SET_CATEGORY, payload: result.categoryId });
-    // Set the selected unit as the 'From' unit by default
-    dispatch({ type: ActionTypes.SET_FROM_UNIT, payload: result.symbol });
-    // Optionally set input value to 1 for immediate conversion
-    dispatch({ type: ActionTypes.SET_INPUT_VALUE, payload: '1' });
-
-    // Clear search results after selection
-    setSearchResults([]);
-    // Ideally, close the search dropdown (handled in SearchComponent)
-    // Potentially focus the input value field here
-  };
-
   return (
     <Layout>
       <ErrorBoundary>
         <ConversionWrapper>
           <TopRow>
-            <h2>Unit Converter</h2>
-            {/* Lazy load Search Component */}
-            <Suspense fallback={<div>Loading Search...</div>}> {/* Or a more subtle placeholder */}
-              <LazySearchComponent
-                onSearch={handleSearch}
-                placeholder="Search units..."
-                results={searchResults} // Pass results
-                isLoading={isSearching} // Pass loading state
-                onResultSelect={handleResultSelect} // Pass selection handler
-              />
-            </Suspense>
-            {/* Add Favorite Button */}
-            <FavoriteButton isFavorite={isCurrentFavorite} onClick={handleToggleFavorite} />
+            {/* Removed Search Component */}
+            {/* Spacer or adjust justify-content if needed */}
+            <div style={{ flexGrow: 1 }}></div> {/* Example spacer */}
+            <TopRowRight>
+                <FavoriteButton isFavorite={isCurrentFavorite} onClick={handleToggleFavorite} />
+                <IconButton onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
+                  {theme === 'light' ? <MoonIcon /> : <SunIcon />}
+                </IconButton>
+            </TopRowRight>
           </TopRow>
-          <CategorySelector
-            categories={categoryOptions}
-            selectedCategory={selectedCategory}
-            onChange={handleCategoryChange}
-          />
+          {/* Wrap CategorySelector - Adjust selector component if needed */}
+          <CategorySelectorWrapper>
+            <CategorySelector
+              categories={categoryOptions}
+              selectedCategory={selectedCategory}
+              onChange={handleCategoryChange}
+            />
+          </CategorySelectorWrapper>
 
           <InputRow>
             <InputField>
@@ -335,24 +315,22 @@ function App() {
             />
           </InputRow>
 
-          <ConversionResult
-            result={outputValue}
-            error={error}
-            onOutputChange={handleOutputChange}
-          />
+          {/* Wrap ConversionResult */}
+          <ConversionResultWrapper>
+            <ConversionResult
+              result={outputValue}
+              error={error}
+              onOutputChange={handleOutputChange}
+            />
+          </ConversionResultWrapper>
 
-          {/* Button to open Custom Unit Manager (Hypothetical) */}
-          <button onClick={() => setShowCustomUnitsManager(true)}>Manage Custom Units</button>
+          {/* Removed Custom Units Button and Section */}
+          {/* <CustomUnitsButtonWrapper>
+            <button onClick={() => setShowCustomUnitsManager(true)}>Manage Custom Units</button>
+          </CustomUnitsButtonWrapper> */}
+          {/* {showCustomUnitsManager && ( ... )} */}
 
-          {/* Conditionally render Custom Unit Manager with Suspense */}
-          {showCustomUnitsManager && (
-            <Suspense fallback={<div>Loading Custom Unit Manager...</div>}>
-              {/* Assume Modal wrapper or similar is handled inside CustomUnitManager or here */}
-              <LazyCustomUnitManager />
-            </Suspense>
-          )}
-
-          {/* Add History and Favorites Sections side-by-side */}
+          {/* InfoSections will now grow and handle internal scroll */}
           <InfoSections>
             <HistoryList />
             <FavoritesList />
