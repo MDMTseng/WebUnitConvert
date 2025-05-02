@@ -27,6 +27,7 @@ import FavoriteButton from './components/FavoriteButton';
 import FavoritesList from './components/FavoritesList';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import { useTheme } from './contexts/ThemeContext';
+import UpdatePrompt from './components/UpdatePrompt';
 
 function App() {
   const { state, dispatch } = useConversionContext();
@@ -212,132 +213,138 @@ function App() {
 
   return (
     <Layout>
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        height: '100%',
-        overflow: 'auto',
-        gap: 1
-      }}>
-        <Paper elevation={2} sx={{ p: { xs: 1.5, sm: 2 } }}>
-          <Grid container spacing={1.5}>
-            <Grid item xs={12}>
-              <Box sx={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center', 
-                mb: 0.5 
-              }}>
-                <Typography variant="h5" component="h1">Unit Converter</Typography>
-                <Stack direction="row" spacing={0.5}>
-                  <MuiIconButton 
-                    onClick={toggleTheme} 
-                    color="primary" 
-                    size="small"
-                    aria-label="toggle dark/light mode"
-                  >
-                    {isDarkMode ? <Brightness7 /> : <Brightness4 />}
-                  </MuiIconButton>
-                  <FavoriteButton
-                    isFavorite={isCurrentFavorite}
-                    onClick={handleToggleFavorite}
-                    disabled={!selectedCategory || !fromUnit || !toUnit}
+      <ErrorBoundary>
+        <Container maxWidth="sm" sx={{ my: 2 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            height: '100%',
+            overflow: 'auto',
+            gap: 1
+          }}>
+            <Paper elevation={2} sx={{ p: { xs: 1.5, sm: 2 } }}>
+              <Grid container spacing={1.5}>
+                <Grid item xs={12}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    mb: 0.5 
+                  }}>
+                    <Typography variant="h5" component="h1">Unit Converter</Typography>
+                    <Stack direction="row" spacing={0.5}>
+                      <MuiIconButton 
+                        onClick={toggleTheme} 
+                        color="primary" 
+                        size="small"
+                        aria-label="toggle dark/light mode"
+                      >
+                        {isDarkMode ? <Brightness7 /> : <Brightness4 />}
+                      </MuiIconButton>
+                      <FavoriteButton
+                        isFavorite={isCurrentFavorite}
+                        onClick={handleToggleFavorite}
+                        disabled={!selectedCategory || !fromUnit || !toUnit}
+                      />
+                    </Stack>
+                  </Box>
+                
+                  <CategorySelector
+                    categories={categoryOptions}
+                    selectedCategory={selectedCategory}
+                    onChange={handleCategoryChange}
                   />
-                </Stack>
-              </Box>
+                </Grid>
+                
+                <Grid item xs={12} md={5}>
+                  <UnitSelector
+                    label="From Unit"
+                    units={currentUnits}
+                    selectedUnit={fromUnit}
+                    onChange={handleFromUnitChange}
+                    id="from-unit-select"
+                  />
+                  <NumericInput
+                    label="Value"
+                    id="input-value"
+                    value={inputValue}
+                    onChange={handleInputChange}
+                    placeholder="Enter value"
+                  />
+                </Grid>
+                
+                <Grid item xs={12} md={2} sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  alignItems: 'center',
+                  mt: { xs: 0, md: 2 }
+                }}>
+                  <MuiIconButton 
+                    onClick={handleSwap} 
+                    aria-label="Swap units"
+                    color="primary"
+                    size="small"
+                    sx={{ 
+                      transform: { xs: 'rotate(90deg)', md: 'rotate(0)' }
+                    }}
+                  >
+                    <SwapVertIcon />
+                  </MuiIconButton>
+                </Grid>
+                
+                <Grid item xs={12} md={5}>
+                  <UnitSelector
+                    label="To Unit"
+                    units={currentUnits}
+                    selectedUnit={toUnit}
+                    onChange={handleToUnitChange}
+                    id="to-unit-select"
+                  />
+                  <ConversionResult 
+                    result={outputValue} 
+                    error={error}
+                    onOutputChange={handleOutputChange}
+                  />
+                </Grid>
+              </Grid>
+            </Paper>
             
-              <CategorySelector
-                categories={categoryOptions}
-                selectedCategory={selectedCategory}
-                onChange={handleCategoryChange}
-              />
-            </Grid>
-            
-            <Grid item xs={12} md={5}>
-              <UnitSelector
-                label="From Unit"
-                units={currentUnits}
-                selectedUnit={fromUnit}
-                onChange={handleFromUnitChange}
-                id="from-unit-select"
-              />
-              <NumericInput
-                label="Value"
-                id="input-value"
-                value={inputValue}
-                onChange={handleInputChange}
-                placeholder="Enter value"
-              />
-            </Grid>
-            
-            <Grid item xs={12} md={2} sx={{ 
+            <Box sx={{ 
               display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center',
-              mt: { xs: 0, md: 2 }
+              flexDirection: { xs: 'column', md: 'row' }, 
+              gap: 1,
+              flexGrow: 1,
+              minHeight: 0
             }}>
-              <MuiIconButton 
-                onClick={handleSwap} 
-                aria-label="Swap units"
-                color="primary"
-                size="small"
-                sx={{ 
-                  transform: { xs: 'rotate(90deg)', md: 'rotate(0)' }
-                }}
-              >
-                <SwapVertIcon />
-              </MuiIconButton>
-            </Grid>
-            
-            <Grid item xs={12} md={5}>
-              <UnitSelector
-                label="To Unit"
-                units={currentUnits}
-                selectedUnit={toUnit}
-                onChange={handleToUnitChange}
-                id="to-unit-select"
-              />
-              <ConversionResult 
-                result={outputValue} 
-                error={error}
-                onOutputChange={handleOutputChange}
-              />
-            </Grid>
-          </Grid>
-        </Paper>
+              <Paper sx={{ 
+                flex: 1, 
+                p: 1.5,
+                display: 'flex', 
+                flexDirection: 'column',
+                overflow: 'hidden'
+              }}>
+                <ErrorBoundary fallback={<div>Error loading favorites</div>}>
+                  <FavoritesList />
+                </ErrorBoundary>
+              </Paper>
+              
+              <Paper sx={{ 
+                flex: 1, 
+                p: 1.5,
+                display: 'flex', 
+                flexDirection: 'column',
+                overflow: 'hidden'
+              }}>
+                <ErrorBoundary fallback={<div>Error loading history</div>}>
+                  <HistoryList />
+                </ErrorBoundary>
+              </Paper>
+            </Box>
+          </Box>
+        </Container>
         
-        <Box sx={{ 
-          display: 'flex', 
-          flexDirection: { xs: 'column', md: 'row' }, 
-          gap: 1,
-          flexGrow: 1,
-          minHeight: 0
-        }}>
-          <Paper sx={{ 
-            flex: 1, 
-            p: 1.5,
-            display: 'flex', 
-            flexDirection: 'column',
-            overflow: 'hidden'
-          }}>
-            <ErrorBoundary fallback={<div>Error loading favorites</div>}>
-              <FavoritesList />
-            </ErrorBoundary>
-          </Paper>
-          
-          <Paper sx={{ 
-            flex: 1, 
-            p: 1.5,
-            display: 'flex', 
-            flexDirection: 'column',
-            overflow: 'hidden'
-          }}>
-            <ErrorBoundary fallback={<div>Error loading history</div>}>
-              <HistoryList />
-            </ErrorBoundary>
-          </Paper>
-        </Box>
-      </Box>
+        <UpdatePrompt />
+      </ErrorBoundary>
     </Layout>
   );
 }

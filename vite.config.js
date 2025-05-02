@@ -31,7 +31,8 @@ export default defineConfig({
       open: false,
     }),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
+      injectRegister: 'auto',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
         name: 'Unit Converter Pro',
@@ -58,10 +59,45 @@ export default defineConfig({
         ]
       },
       workbox: {
-        // Option 1: Increase the maximum file size for precaching
-        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // 4 MB
-        
-        // Option 2: Exclude stats.html from precaching
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        clientsClaim: true,
+        skipWaiting: true,
+        cacheId: 'unit-converter-' + new Date().toISOString().slice(0, 10),
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365
+              }
+            }
+          },
+          {
+            urlPattern: /\.(?:js|css)$/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'static-resources',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24
+              }
+            }
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|ico)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images',
+              expiration: {
+                maxEntries: 60,
+                maxAgeSeconds: 60 * 60 * 24 * 30
+              }
+            }
+          }
+        ],
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         globIgnores: ['**/stats.html']
       }
