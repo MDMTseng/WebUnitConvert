@@ -21,6 +21,9 @@ const copyCustomFiles = () => {
   }
 };
 
+// Generate a unique build timestamp for cache busting
+const buildTimestamp = new Date().toISOString().replace(/[^0-9]/g, '');
+
 // https://vite.dev/config/
 export default defineConfig({
   base: './',
@@ -31,7 +34,7 @@ export default defineConfig({
       open: false,
     }),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       injectRegister: 'auto',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
@@ -62,13 +65,14 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         clientsClaim: true,
         skipWaiting: true,
-        cacheId: 'unit-converter-' + new Date().toISOString().slice(0, 10),
+        cleanupOutdatedCaches: true,
+        cacheId: 'unit-converter-' + buildTimestamp,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'google-fonts-cache',
+              cacheName: 'google-fonts-cache-' + buildTimestamp,
               expiration: {
                 maxEntries: 10,
                 maxAgeSeconds: 60 * 60 * 24 * 365
@@ -79,7 +83,7 @@ export default defineConfig({
             urlPattern: /\.(?:js|css)$/i,
             handler: 'StaleWhileRevalidate',
             options: {
-              cacheName: 'static-resources',
+              cacheName: 'static-resources-' + buildTimestamp,
               expiration: {
                 maxEntries: 50,
                 maxAgeSeconds: 60 * 60 * 24
@@ -90,7 +94,7 @@ export default defineConfig({
             urlPattern: /\.(?:png|jpg|jpeg|svg|gif|ico)$/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'images',
+              cacheName: 'images-' + buildTimestamp,
               expiration: {
                 maxEntries: 60,
                 maxAgeSeconds: 60 * 60 * 24 * 30
@@ -106,6 +110,15 @@ export default defineConfig({
   ],
   build: {
     outDir: 'docs',
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          mui: ['@mui/material', '@mui/icons-material']
+        }
+      }
+    }
   },
   test: {
     globals: true,

@@ -3,53 +3,35 @@ import { Snackbar, Button, Box, Typography } from '@mui/material';
 import UpdateIcon from '@mui/icons-material/SystemUpdate';
 
 /**
- * Component that handles checking for service worker updates and prompting the user
- * to reload the application when a new version is available.
+ * A simplified component that handles checking for service worker updates
+ * and prompting the user to reload the application when a new version is available.
  */
 const UpdatePrompt = () => {
   const [showReload, setShowReload] = useState(false);
-  const [waitingWorker, setWaitingWorker] = useState(null);
 
   useEffect(() => {
     // Skip if running in development mode or if service workers aren't supported
-    if (
-      import.meta.env.DEV || 
-      !('serviceWorker' in navigator) ||
-      !window.workbox
-    ) {
+    if (import.meta.env.DEV || !('serviceWorker' in navigator)) {
       return;
     }
 
-    const wb = window.workbox;
-
-    // Add event listeners for the service worker lifecycle
-    const promptForUpdate = (worker) => {
+    // Simple event listener for the custom refresh event
+    const handleNeedRefresh = () => {
+      console.log('New content available, showing update prompt');
       setShowReload(true);
-      setWaitingWorker(worker);
     };
 
-    // These events come from the workbox-window package integrated with vite-plugin-pwa
-    wb.addEventListener('waiting', (event) => {
-      console.log('A new service worker has installed and is waiting to activate');
-      promptForUpdate(event.sw);
-    });
+    // Listen for the custom event from main.jsx
+    window.addEventListener('sw-update-available', handleNeedRefresh);
 
-    wb.addEventListener('controlling', () => {
-      console.log('A new service worker has taken control and the page will reload');
-      window.location.reload();
-    });
-
-    // Register the service worker
-    wb.register();
+    return () => {
+      window.removeEventListener('sw-update-available', handleNeedRefresh);
+    };
   }, []);
 
   const reloadPage = () => {
-    if (waitingWorker) {
-      // Send the SKIP_WAITING message to the waiting service worker
-      waitingWorker.postMessage({ type: 'SKIP_WAITING' });
-    } else {
-      window.location.reload();
-    }
+    // Simple page reload instead of dealing with skip waiting
+    window.location.reload();
     setShowReload(false);
   };
 
