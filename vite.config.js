@@ -7,4 +7,9 @@ export default defineConfig({
   build: {
     outDir: 'docs', // Specify the output directory
   },
+  test: {
+    globals: true, // Use global APIs like describe, it, expect
+    environment: 'jsdom', // Simulate browser environment
+    setupFiles: './src/tests/setup.js', // Optional setup file
+  },
 })
