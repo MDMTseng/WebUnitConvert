@@ -1,4 +1,4 @@
-import React, { createContext, useReducer, useEffect } from 'react';
+import React, { createContext, useReducer, useEffect, useRef } from 'react';
 import { getUnitRegistry } from '../utils/conversions'; // Assuming registry is needed
 import { getItem, setItem } from '../utils/localStorage'; // Import localStorage utils
 
@@ -6,6 +6,7 @@ import { getItem, setItem } from '../utils/localStorage'; // Import localStorage
 const MAX_HISTORY_LENGTH = 20; // Max number of history items
 const HISTORY_STORAGE_KEY = 'conversionHistory'; // Key for localStorage
 const FAVORITES_STORAGE_KEY = 'conversionFavorites'; // Key for favorites
+const DEBOUNCE_DELAY = 2000; // 2 seconds debounce for history entries
 
 // --- Initial State ---
 const initialState = {
@@ -18,6 +19,7 @@ const initialState = {
   error: null,
   history: [],
   favorites: [],
+  pendingHistoryEntry: null, // To store pending history entry during debounce
 };
 
 // --- Action Types ---
@@ -29,9 +31,10 @@ const ActionTypes = {
   SET_OUTPUT_VALUE: 'SET_OUTPUT_VALUE',
   SET_ERROR: 'SET_ERROR',
   SWAP_UNITS: 'SWAP_UNITS',
-  ADD_TO_HISTORY: 'ADD_TO_HISTORY', // New action type
-  CLEAR_HISTORY: 'CLEAR_HISTORY',   // New action type
-  LOAD_HISTORY: 'LOAD_HISTORY',     // New action type (for loading from storage)
+  ADD_TO_HISTORY: 'ADD_TO_HISTORY', // Debounced action
+  CLEAR_HISTORY: 'CLEAR_HISTORY',
+  LOAD_HISTORY: 'LOAD_HISTORY',
+  SET_PENDING_HISTORY: 'SET_PENDING_HISTORY', // New action to store pending entry
   // Favorites Actions
   ADD_FAVORITE: 'ADD_FAVORITE',
   REMOVE_FAVORITE: 'REMOVE_FAVORITE',
@@ -61,9 +64,9 @@ const conversionReducer = (state = initialState, action) => {
       // Reset output/error when input changes
       return { ...state, inputValue: action.payload, outputValue: null, error: null };
     case ActionTypes.SET_OUTPUT_VALUE: {
-      // Only add to history if there's a valid input value and output value
+      // Only prepare history entry if there's a valid input and output
       if (state.inputValue && state.inputValue !== '-' && action.payload) {
-        // When output is set successfully, add the conversion to history
+        // Create the potential history entry but don't add it immediately
         const newHistoryEntry = {
           id: Date.now(), // Simple unique ID using timestamp
           category: state.selectedCategory,
@@ -73,14 +76,12 @@ const conversionReducer = (state = initialState, action) => {
           outputValue: action.payload, // The calculated output
           timestamp: new Date().toISOString(),
         };
-        // Add to beginning and limit length
-        const updatedHistory = [newHistoryEntry, ...state.history].slice(0, MAX_HISTORY_LENGTH);
         
         return {
           ...state,
           outputValue: action.payload,
           error: null,
-          history: updatedHistory, // Update history
+          pendingHistoryEntry: newHistoryEntry, // Store pending entry for debounce
         };
       }
       
@@ -89,6 +90,19 @@ const conversionReducer = (state = initialState, action) => {
         ...state,
         outputValue: action.payload,
         error: null
+      };
+    }
+    case ActionTypes.ADD_TO_HISTORY: {
+      // Only add to history if there's a pending entry
+      if (!action.payload) return state;
+      
+      // Add to beginning and limit length
+      const updatedHistory = [action.payload, ...state.history].slice(0, MAX_HISTORY_LENGTH);
+      
+      return {
+        ...state,
+        history: updatedHistory,
+        pendingHistoryEntry: null, // Clear pending entry
       };
     }
     case ActionTypes.SET_ERROR:
@@ -103,11 +117,9 @@ const conversionReducer = (state = initialState, action) => {
         inputValue: currentOutput ? currentOutput.toString() : '',
         outputValue: null, // Reset output, needs recalculation
         error: null,
+        pendingHistoryEntry: null, // Clear any pending entries
       };
     }
-    case ActionTypes.ADD_TO_HISTORY: // Could be used manually if needed, but SET_OUTPUT handles it now
-      const historyToAdd = [action.payload, ...state.history].slice(0, MAX_HISTORY_LENGTH);
-      return { ...state, history: historyToAdd };
     case ActionTypes.CLEAR_HISTORY:
       return { ...state, history: [] };
     case ActionTypes.LOAD_HISTORY: // For loading from storage later
@@ -159,6 +171,33 @@ export const ConversionProvider = ({ children }) => {
   };
 
   const [state, dispatch] = useReducer(conversionReducer, initialState, init);
+  const historyTimeoutRef = useRef(null);
+
+  // Debounce the history entry addition
+  useEffect(() => {
+    // If there's a pending history entry, set up the debounce
+    if (state.pendingHistoryEntry) {
+      // Clear any existing timeout
+      if (historyTimeoutRef.current) {
+        clearTimeout(historyTimeoutRef.current);
+      }
+      
+      // Set a new timeout
+      historyTimeoutRef.current = setTimeout(() => {
+        dispatch({ 
+          type: ActionTypes.ADD_TO_HISTORY, 
+          payload: state.pendingHistoryEntry 
+        });
+      }, DEBOUNCE_DELAY);
+      
+      // Clean up timeout on unmount or when pendingHistoryEntry changes
+      return () => {
+        if (historyTimeoutRef.current) {
+          clearTimeout(historyTimeoutRef.current);
+        }
+      };
+    }
+  }, [state.pendingHistoryEntry]);
 
   // Persist history and favorites to localStorage whenever they change
   useEffect(() => {

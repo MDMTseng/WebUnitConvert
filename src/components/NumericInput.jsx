@@ -1,5 +1,6 @@
 import React from 'react';
-import { TextField, Box } from '@mui/material';
+import { TextField, Box, IconButton, InputAdornment } from '@mui/material';
+import ClearIcon from '@mui/icons-material/Clear';
 
 const NumericInput = ({ label, value, onChange, id, placeholder = 'Enter value' }) => {
   const handleChange = (e) => {
@@ -7,6 +8,10 @@ const NumericInput = ({ label, value, onChange, id, placeholder = 'Enter value' 
     if (val === '' || val === '-' || /^-?\d*\.?\d*$/.test(val)) {
       onChange(val);
     }
+  };
+
+  const handleClear = () => {
+    onChange('');
   };
 
   return (
@@ -19,6 +24,20 @@ const NumericInput = ({ label, value, onChange, id, placeholder = 'Enter value' 
         value={value || ''}
         onChange={handleChange}
         placeholder={placeholder}
+        InputProps={{
+          endAdornment: value ? (
+            <InputAdornment position="end">
+              <IconButton
+                aria-label="clear input"
+                onClick={handleClear}
+                edge="end"
+                size="small"
+              >
+                <ClearIcon fontSize="small" />
+              </IconButton>
+            </InputAdornment>
+          ) : null,
+        }}
         inputProps={{
           inputMode: 'decimal',
           pattern: '^-?\\d*\\.?\\d*$',
