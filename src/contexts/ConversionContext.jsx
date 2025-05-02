@@ -239,19 +239,24 @@ export const ConversionProvider = ({ children }) => {
   const [state, dispatch] = useReducer(conversionReducer, initialState, init);
   const historyTimeoutRef = useRef(null);
 
+  // Helper function to save app state - reduces code duplication
+  const saveAppState = () => {
+    const stateToSave = {
+      selectedCategory: state.selectedCategory,
+      fromUnit: state.fromUnit,
+      toUnit: state.toUnit,
+      inputValue: state.inputValue,
+      outputValue: state.outputValue,
+    };
+    
+    setItem(APP_STATE_STORAGE_KEY, stateToSave);
+    return stateToSave; // Return for potential logging or future use
+  };
+
   // Save app state when window is about to close or user navigates away
   useEffect(() => {
     const handleBeforeUnload = () => {
-      // Create a simplified version of the state to save (exclude internal flags)
-      const stateToSave = {
-        selectedCategory: state.selectedCategory,
-        fromUnit: state.fromUnit,
-        toUnit: state.toUnit,
-        inputValue: state.inputValue,
-        outputValue: state.outputValue,
-      };
-      
-      setItem(APP_STATE_STORAGE_KEY, stateToSave);
+      saveAppState();
     };
     
     // Add event listener for when the user is about to leave
@@ -266,15 +271,7 @@ export const ConversionProvider = ({ children }) => {
   // Periodically save app state during use (as a backup)
   useEffect(() => {
     const saveStateInterval = setInterval(() => {
-      const stateToSave = {
-        selectedCategory: state.selectedCategory,
-        fromUnit: state.fromUnit,
-        toUnit: state.toUnit,
-        inputValue: state.inputValue,
-        outputValue: state.outputValue,
-      };
-      
-      setItem(APP_STATE_STORAGE_KEY, stateToSave);
+      saveAppState();
     }, 10000); // Save every 10 seconds
     
     return () => {
@@ -312,7 +309,13 @@ export const ConversionProvider = ({ children }) => {
   useEffect(() => {
     // Avoid saving the initial empty array before it's loaded
     if (state.history.length > 0 || getItem(HISTORY_STORAGE_KEY) !== null) {
-       setItem(HISTORY_STORAGE_KEY, state.history);
+      // Save history
+      setItem(HISTORY_STORAGE_KEY, state.history);
+      
+      // ENHANCED: Save app state whenever history changes
+      // This ensures app state is saved whenever a new conversion is completed
+      saveAppState();
+      console.log('App state saved due to history change');
     }
   }, [state.history]); // Run whenever state.history changes
 
