@@ -74,6 +74,51 @@ describe('convertUnit', () => {
     expectDecimal(result, 212);
   });
 
+  // --- Volume Conversions ---
+  it('should convert liters to gallons (US)', () => {
+    const result = convertUnit(10, 'l', 'gal');
+    expectDecimal(result, 2.64172);
+  });
+
+  it('should convert milliliters to fluid ounces (US)', () => {
+    const result = convertUnit(500, 'ml', 'fl oz');
+    expectDecimal(result, 16.90703);
+  });
+
+  it('should convert cubic meters to liters', () => {
+    const result = convertUnit(2, 'm³', 'l');
+    expectDecimal(result, 2000);
+  });
+
+  // --- Time Conversions ---
+  it('should convert hours to seconds', () => {
+    const result = convertUnit(2, 'h', 's');
+    expectDecimal(result, 7200);
+  });
+
+  it('should convert days to minutes', () => {
+    const result = convertUnit(3, 'd', 'min');
+    expectDecimal(result, 4320);
+  });
+
+  // --- Digital Storage Conversions ---
+  it('should convert Megabytes to bits', () => {
+    const result = convertUnit(1, 'MB', 'b');
+    expectDecimal(result, 8e6);
+  });
+
+  it('should convert Gigabits to Kilobytes', () => {
+    // 1 Gb = 1e9 bits. 1 kB = 8000 bits.
+    // Result = (1 * 1e9) / 8000
+    const result = convertUnit(1, 'Gb', 'kB');
+    expectDecimal(result, 125000);
+  });
+
+  it('should convert Bytes to bits', () => {
+    const result = convertUnit(100, 'B', 'b');
+    expectDecimal(result, 800);
+  });
+
   // --- Edge Cases and Invalid Conversions ---
   it('should return the same value when converting to the same unit', () => {
     const result = convertUnit(100, 'kg', 'kg');

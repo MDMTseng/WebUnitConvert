@@ -36,7 +36,48 @@ const unitRegistry = {
       k: { name: 'Kelvin', symbol: 'k' },
     },
   },
-  // Add other categories (volume, time, digital storage) here later
+  volume: {
+    baseUnit: 'l',
+    units: {
+      l: { name: 'Liter', symbol: 'l', factor: new Decimal(1) },
+      ml: { name: 'Milliliter', symbol: 'ml', factor: new Decimal(0.001) },
+      gal: { name: 'Gallon (US)', symbol: 'gal', factor: new Decimal(3.78541) },
+      qt: { name: 'Quart (US)', symbol: 'qt', factor: new Decimal(0.946353) },
+      pt: { name: 'Pint (US)', symbol: 'pt', factor: new Decimal(0.473176) },
+      cup: { name: 'Cup (US)', symbol: 'cup', factor: new Decimal(0.236588) },
+      'fl oz': { name: 'Fluid Ounce (US)', symbol: 'fl oz', factor: new Decimal(0.0295735) },
+      'm³': { name: 'Cubic Meter', symbol: 'm³', factor: new Decimal(1000) },
+      'cm³': { name: 'Cubic Centimeter', symbol: 'cm³', factor: new Decimal(0.001) },
+    },
+  },
+  time: {
+    baseUnit: 's',
+    units: {
+      s: { name: 'Second', symbol: 's', factor: new Decimal(1) },
+      ms: { name: 'Millisecond', symbol: 'ms', factor: new Decimal(0.001) },
+      min: { name: 'Minute', symbol: 'min', factor: new Decimal(60) },
+      h: { name: 'Hour', symbol: 'h', factor: new Decimal(3600) },
+      d: { name: 'Day', symbol: 'd', factor: new Decimal(86400) },
+      wk: { name: 'Week', symbol: 'wk', factor: new Decimal(604800) },
+      mo: { name: 'Month (avg)', symbol: 'mo', factor: new Decimal(2628000) },
+      yr: { name: 'Year (avg)', symbol: 'yr', factor: new Decimal(31536000) },
+    },
+  },
+  digitalStorage: {
+    baseUnit: 'b',
+    units: {
+      b: { name: 'Bit', symbol: 'b', factor: new Decimal(1) },
+      B: { name: 'Byte', symbol: 'B', factor: new Decimal(8) },
+      kb: { name: 'Kilobit', symbol: 'kb', factor: new Decimal(1000) },
+      kB: { name: 'Kilobyte', symbol: 'kB', factor: new Decimal(8000) },
+      Mb: { name: 'Megabit', symbol: 'Mb', factor: new Decimal(1e6) },
+      MB: { name: 'Megabyte', symbol: 'MB', factor: new Decimal(8e6) },
+      Gb: { name: 'Gigabit', symbol: 'Gb', factor: new Decimal(1e9) },
+      GB: { name: 'Gigabyte', symbol: 'GB', factor: new Decimal(8e9) },
+      Tb: { name: 'Terabit', symbol: 'Tb', factor: new Decimal(1e12) },
+      TB: { name: 'Terabyte', symbol: 'TB', factor: new Decimal(8e12) },
+    },
+  },
 };
 
 // --- Conversion Logic ---
@@ -47,8 +88,11 @@ const unitRegistry = {
  * @returns {string|null} The category key (e.g., 'weight') or null if not found.
  */
 const getCategoryForUnit = (unitSymbol) => {
-  for (const categoryKey in unitRegistry) {
-    if (unitRegistry[categoryKey].units[unitSymbol]) {
+  // Iterate through the category keys
+  for (const categoryKey of Object.keys(unitRegistry)) {
+    const category = unitRegistry[categoryKey];
+    // Check if the units object exists and the symbol is a direct key within it
+    if (category && category.units && category.units[unitSymbol]) {
       return categoryKey;
     }
   }

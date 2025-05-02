@@ -1,0 +1,85 @@
+.searchContainer {
+  position: relative; /* Needed for absolute positioning of results */
+  width: 100%;
+  max-width: 400px; /* Adjust as needed */
+  margin: 1rem auto; /* Example centering */
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* Placeholder for results styling */
+.searchResults {
+  position: absolute;
+  top: 100%; /* Position below the input */
+  left: 0;
+  right: 0;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000; /* Ensure it's above other content */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.searchResults ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.searchResults li {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+}
+
+.searchResults li:hover {
+  background-color: #f0f0f0;
+}
+
+/* Added styles for loading and no results */
+.loading,
+.noResults {
+  padding: 0.75rem 1rem;
+  color: #6c757d; /* Gray text */
+  text-align: center;
+}
+
+/* Styles for focused item and highlighted text */
+.resultItem {
+  /* Add transition for smoother background change if desired */
+  transition: background-color 0.1s ease-in-out;
+}
+
+.focused {
+  background-color: #e9ecef; /* Light gray background for focused item */
+  outline: none; /* Remove default focus outline if any */
+}
+
+.highlight {
+  background-color: #fff3cd; /* Light yellow highlight */
+  font-weight: bold;
+  padding: 0 1px;
+  border-radius: 2px;
+  color: #333; /* Ensure text color remains readable */
+}
+
+.categoryName {
+  color: #6c757d;
+  font-size: 0.9em;
+  margin-left: 0.5em;
+} 
