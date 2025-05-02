@@ -2,6 +2,24 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { visualizer } from 'rollup-plugin-visualizer';
 import { VitePWA } from 'vite-plugin-pwa';
+import fs from 'fs';
+import path from 'path';
+
+// Custom plugin to copy CNAME file to build output
+const copyCustomFiles = () => {
+  return {
+    name: 'copy-custom-files',
+    closeBundle: () => {
+      const cnameContent = 'unitconverter.xception.tech';
+      const outDir = 'docs';
+      const cnamePath = path.resolve(outDir, 'CNAME');
+      
+      // Create CNAME file in build output
+      fs.writeFileSync(cnamePath, cnameContent);
+      console.log('✓ CNAME file created in build output');
+    }
+  }
+};
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -47,7 +65,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         globIgnores: ['**/stats.html']
       }
-    })
+    }),
+    copyCustomFiles()
   ],
   build: {
     outDir: 'docs',
