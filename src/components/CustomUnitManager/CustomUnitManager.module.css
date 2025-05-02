@@ -1,0 +1,167 @@
+.managerContainer {
+  padding: 1rem;
+  /* Add container styles as needed */
+}
+
+.createButton {
+  background-color: #28a745;
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.createButton:hover {
+  background-color: #218838;
+}
+
+.unitsTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.unitsTable th,
+.unitsTable td {
+  border: 1px solid #ddd;
+  padding: 0.75rem;
+  text-align: left;
+}
+
+.unitsTable th {
+  background-color: #f8f9fa;
+  font-weight: bold;
+}
+
+.unitsTable tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.actionButton {
+  padding: 0.3rem 0.6rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  margin-right: 0.5rem;
+  transition: background-color 0.2s ease;
+}
+
+.editButton {
+  background-color: #ffc107;
+  color: #333;
+}
+
+.editButton:hover {
+  background-color: #e0a800;
+}
+
+.deleteButton {
+  background-color: #dc3545;
+  color: white;
+}
+
+.deleteButton:hover {
+  background-color: #c82333;
+}
+
+.errorText {
+  color: #dc3545;
+  margin: 0.5rem 0;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+}
+
+/* Basic Modal Styles (Replace with a proper modal library if available) */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  max-width: 90%;
+  width: 550px; /* Adjust as needed */
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.75rem;
+  cursor: pointer;
+  color: #6c757d;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.header h3 {
+  margin: 0;
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* Reuse actionButton styles where appropriate */
+.importButton {
+  background-color: #17a2b8; /* Teal */
+  color: white;
+}
+.importButton:hover {
+  background-color: #138496;
+}
+
+.exportButton {
+  background-color: #6c757d; /* Gray */
+  color: white;
+}
+.exportButton:hover {
+  background-color: #5a6268;
+}
+
+.successText {
+  color: #28a745; /* Green */
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+} 

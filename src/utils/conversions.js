@@ -78,53 +78,99 @@ const unitRegistry = {
       TB: { name: 'Terabyte', symbol: 'TB', factor: new Decimal(8e12) },
     },
   },
+  area: {
+    name: 'Area',
+    baseUnit: 'm²',
+    units: {
+      'm²': { name: '平方公尺', symbol: 'm²', factor: new Decimal(1) },
+      'km²': { name: '平方公里', symbol: 'km²', factor: new Decimal(1e6) },
+      ha: { name: '公頃', symbol: 'ha', factor: new Decimal(10000) },
+      ping: { name: '坪', symbol: '坪', factor: new Decimal(3.30579) },
+      jia: { name: '甲', symbol: '甲', factor: new Decimal(9699.2) },
+      fen: { name: '分', symbol: '分', factor: new Decimal(969.92) },
+      // Keep common units in English for wider audience?
+      acre: { name: 'Acre', symbol: 'acre', factor: new Decimal(4046.86) },
+      'ft²': { name: 'Square Foot', symbol: 'ft²', factor: new Decimal(0.092903) },
+      'yd²': { name: 'Square Yard', symbol: 'yd²', factor: new Decimal(0.836127) },
+    },
+  },
 };
 
 // --- Conversion Logic ---
 
 /**
- * Finds the category a unit belongs to.
- * @param {string} unitSymbol - The symbol of the unit (e.g., 'kg').
- * @returns {string|null} The category key (e.g., 'weight') or null if not found.
+ * Finds the category and unit data for a given unit symbol.
+ * Checks both the standard registry and the provided custom units.
+ * @param {string} unitSymbol - The symbol of the unit (e.g., 'kg', 'customSymbol').
+ * @param {Array<object>} customUnits - Array of custom unit objects.
+ * @returns {{categoryKey: string, unitData: object}|null} Object with category key and unit data, or null.
  */
-const getCategoryForUnit = (unitSymbol) => {
-  // Iterate through the category keys
+const findUnitData = (unitSymbol, customUnits = []) => {
+  // Check custom units first
+  const customUnit = customUnits.find(u => u.symbol === unitSymbol);
+  if (customUnit) {
+    return {
+      categoryKey: customUnit.categoryId,
+      // Ensure custom unit data has a factorToBase property mapped to 'factor' for consistency here
+      unitData: { ...customUnit, factor: new Decimal(customUnit.factorToBase) },
+      isCustom: true,
+    };
+  }
+
+  // Check standard registry
   for (const categoryKey of Object.keys(unitRegistry)) {
     const category = unitRegistry[categoryKey];
-    // Check if the units object exists and the symbol is a direct key within it
     if (category && category.units && category.units[unitSymbol]) {
-      return categoryKey;
+      return {
+        categoryKey,
+        // Standard units already have a Decimal 'factor'
+        unitData: category.units[unitSymbol],
+        isCustom: false,
+      };
     }
   }
-  return null;
+
+  return null; // Unit not found
 };
 
 /**
- * Converts a value from one unit to another within the same category.
+ * Converts a value from one unit to another within the same category,
+ * considering both standard and custom units.
  *
  * @param {number|string|Decimal} value - The input value to convert.
- * @param {string} fromUnitSymbol - The symbol of the source unit (e.g., 'kg').
- * @param {string} toUnitSymbol - The symbol of the target unit (e.g., 'lb').
+ * @param {string} fromUnitSymbol - The symbol of the source unit.
+ * @param {string} toUnitSymbol - The symbol of the target unit.
+ * @param {Array<object>} [customUnits=[]] - Optional array of custom units.
  * @returns {Decimal|null} The converted value as a Decimal object, or null if conversion is not possible.
  */
-export const convertUnit = (value, fromUnitSymbol, toUnitSymbol) => {
+export const convertUnit = (value, fromUnitSymbol, toUnitSymbol, customUnits = []) => {
   if (fromUnitSymbol === toUnitSymbol) {
     return new Decimal(value);
   }
 
-  const categoryKey = getCategoryForUnit(fromUnitSymbol);
-  if (!categoryKey || !unitRegistry[categoryKey].units[toUnitSymbol]) {
-    console.error(`Conversion between ${fromUnitSymbol} and ${toUnitSymbol} is not supported or units are invalid.`);
-    return null; // Units not found or not in the same category
+  const fromData = findUnitData(fromUnitSymbol, customUnits);
+  const toData = findUnitData(toUnitSymbol, customUnits);
+
+  if (!fromData || !toData) {
+    console.error(`Cannot convert: Unit ${!fromData ? fromUnitSymbol : toUnitSymbol} not found.`);
+    return null;
   }
 
-  const category = unitRegistry[categoryKey];
-  const fromUnit = category.units[fromUnitSymbol];
-  const toUnit = category.units[toUnitSymbol];
+  if (fromData.categoryKey !== toData.categoryKey) {
+    console.error(`Cannot convert: Units ${fromUnitSymbol} and ${toUnitSymbol} are in different categories (${fromData.categoryKey} vs ${toData.categoryKey}).`);
+    return null;
+  }
+
+  const categoryKey = fromData.categoryKey;
   const valDecimal = new Decimal(value);
 
-  // Handle temperature separately
+  // Handle temperature separately (custom temperature units not supported by this logic)
   if (categoryKey === 'temperature') {
+    if (fromData.isCustom || toData.isCustom) {
+      console.error("Custom temperature units are not supported.");
+      return null;
+    }
+    // Existing temperature logic...
     if (fromUnitSymbol === 'c') {
       if (toUnitSymbol === 'f') return valDecimal.times(9).dividedBy(5).plus(32);
       if (toUnitSymbol === 'k') return valDecimal.plus(273.15);
@@ -135,12 +181,21 @@ export const convertUnit = (value, fromUnitSymbol, toUnitSymbol) => {
       if (toUnitSymbol === 'c') return valDecimal.minus(273.15);
       if (toUnitSymbol === 'f') return valDecimal.minus(273.15).times(9).dividedBy(5).plus(32);
     }
-    return null; // Should not happen if symbols are valid
+    return null; // Should not happen
   }
 
-  // Standard conversion using factors relative to the base unit
-  const valueInBaseUnit = valDecimal.times(fromUnit.factor);
-  const valueInTargetUnit = valueInBaseUnit.dividedBy(toUnit.factor);
+  // Standard conversion using factors (factor/factorToBase normalized to 'factor')
+  // Ensure factors are Decimal objects
+  const fromFactor = new Decimal(fromData.unitData.factor);
+  const toFactor = new Decimal(toData.unitData.factor);
+
+  if (!fromFactor || !toFactor) { // Should be caught by findUnitData, but good practice
+      console.error("Conversion factors missing.");
+      return null;
+  }
+
+  const valueInBaseUnit = valDecimal.times(fromFactor);
+  const valueInTargetUnit = valueInBaseUnit.dividedBy(toFactor);
 
   return valueInTargetUnit;
 };

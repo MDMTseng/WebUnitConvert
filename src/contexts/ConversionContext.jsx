@@ -1,6 +1,7 @@
 import React, { createContext, useReducer, useEffect } from 'react';
 import { getUnitRegistry } from '../utils/conversions'; // Assuming registry is needed
 import { getItem, setItem } from '../utils/localStorage'; // Import localStorage utils
+import { getCustomUnits } from '../utils/customUnitUtils'; // Import custom unit util
 
 // --- Constants ---
 const MAX_HISTORY_LENGTH = 20; // Max number of history items
@@ -19,6 +20,7 @@ const initialState = {
   error: null, // Any conversion errors
   history: [], // Add history array
   favorites: [], // Add favorites array
+  customUnits: [], // Add custom units state
   // Add preferences later
 };
 
@@ -38,6 +40,8 @@ const ActionTypes = {
   ADD_FAVORITE: 'ADD_FAVORITE',
   REMOVE_FAVORITE: 'REMOVE_FAVORITE',
   LOAD_FAVORITES: 'LOAD_FAVORITES',
+  LOAD_CUSTOM_UNITS: 'LOAD_CUSTOM_UNITS',
+  SET_CUSTOM_UNITS: 'SET_CUSTOM_UNITS', // In case we update them via the context
 };
 
 // --- Reducer ---
@@ -127,6 +131,14 @@ const conversionReducer = (state = initialState, action) => {
       const loadedFavorites = Array.isArray(action.payload) ? action.payload : [];
       return { ...state, favorites: loadedFavorites };
 
+    case ActionTypes.LOAD_CUSTOM_UNITS:
+      // This action type might just trigger the load in useEffect
+      // Or directly load and set here if preferred (less common)
+      return state; // Or return { ...state, customUnits: getCustomUnits() };
+    case ActionTypes.SET_CUSTOM_UNITS:
+      // Used if CRUD operations update context directly (e.g., after save in Manager)
+      return { ...state, customUnits: action.payload };
+
     default:
       return state;
   }
@@ -140,19 +152,22 @@ const ConversionContext = createContext({
 
 // --- Provider Component ---
 export const ConversionProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(conversionReducer, initialState);
+  // Initializer function for useReducer to load from localStorage
+  const init = (initialState) => {
+    const loadedHistory = getItem(HISTORY_STORAGE_KEY, []);
+    const loadedFavorites = getItem(FAVORITES_STORAGE_KEY, []);
+    const loadedCustomUnits = getCustomUnits();
+    return {
+      ...initialState,
+      history: loadedHistory,
+      favorites: loadedFavorites,
+      customUnits: loadedCustomUnits,
+    };
+  };
 
-  // Load history and favorites from localStorage on initial mount
-  useEffect(() => {
-    const savedHistory = getItem(HISTORY_STORAGE_KEY, []);
-    dispatch({ type: ActionTypes.LOAD_HISTORY, payload: savedHistory });
+  const [state, dispatch] = useReducer(conversionReducer, initialState, init);
 
-    const savedFavorites = getItem(FAVORITES_STORAGE_KEY, []);
-    dispatch({ type: ActionTypes.LOAD_FAVORITES, payload: savedFavorites });
-
-  }, []); // Runs only once on mount
-
-  // Save history to localStorage whenever it changes
+  // Persist history and favorites to localStorage whenever they change
   useEffect(() => {
     // Avoid saving the initial empty array before it's loaded
     if (state.history.length > 0 || getItem(HISTORY_STORAGE_KEY) !== null) {

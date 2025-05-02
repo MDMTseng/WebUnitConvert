@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, lazy, Suspense } from 'react';
 import styled from 'styled-components';
 import Layout from './components/Layout';
 import CategorySelector from './components/CategorySelector';
@@ -15,8 +15,12 @@ import { media } from './utils/styles'; // Import media query helper
 import HistoryList from './components/HistoryList'; // Import HistoryList
 import FavoriteButton from './components/FavoriteButton'; // Import FavoriteButton
 import FavoritesList from './components/FavoritesList'; // Import FavoritesList
-import SearchComponent from './components/SearchComponent/SearchComponent'; // Import SearchComponent
 import { searchUnits, debounce } from './utils/searchUtils'; // Import search utils
+import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary'; // Import ErrorBoundary
+
+// Lazy load components
+const LazyCustomUnitManager = lazy(() => import('./components/CustomUnitManager/CustomUnitManager'));
+const LazySearchComponent = lazy(() => import('./components/SearchComponent/SearchComponent'));
 
 const ConversionWrapper = styled.div`
   max-width: 600px;
@@ -99,25 +103,47 @@ const InfoSections = styled.div`
 
 function App() {
   const { state, dispatch } = useConversionContext();
-  const { categories, selectedCategory, fromUnit, toUnit, inputValue, outputValue, favorites } = state;
-  const [searchResults, setSearchResults] = useState([]); // State for search results
-  const [isSearching, setIsSearching] = useState(false); // Optional: State for loading indicator
+  const { categories, selectedCategory, fromUnit, toUnit, inputValue, outputValue, favorites, customUnits } = state;
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showCustomUnitsManager, setShowCustomUnitsManager] = useState(false); // Hypothetical state
 
   // Memoize category list for selector
   const categoryOptions = useMemo(() => {
-    return Object.entries(categories).map(([id, data]) => ({ id, name: data.units[data.baseUnit]?.name || id }));
-    // TODO: Get proper category names if added to registry later
+    // Consider adding categories that ONLY have custom units?
+    return Object.entries(categories).map(([id, data]) => ({
+      id,
+      // Use category name if available, otherwise fallback to ID
+      name: data.name || data.units[data.baseUnit]?.name || id,
+      baseUnitSymbol: data.units[data.baseUnit]?.symbol || ''
+    }));
   }, [categories]);
 
-  // Memoize unit lists for selectors based on selected category
+  // Memoize unit lists for selectors based on selected category, including custom units
   const currentUnits = useMemo(() => {
     const categoryData = categories[selectedCategory];
     if (!categoryData) return [];
-    return Object.entries(categoryData.units).map(([symbol, unitData]) => ({
+
+    // Get standard units for the selected category
+    const standardUnits = Object.entries(categoryData.units).map(([symbol, unitData]) => ({
       symbol,
       name: unitData.name,
+      isCustom: false, // Flag standard units
     }));
-  }, [categories, selectedCategory]);
+
+    // Get custom units for the selected category
+    const categoryCustomUnits = customUnits
+      .filter(unit => unit.categoryId === selectedCategory)
+      .map(unit => ({
+        symbol: unit.symbol,
+        name: unit.name,
+        isCustom: true, // Flag custom units
+      }));
+
+    // Combine and sort (optional: sort custom units separately?)
+    return [...standardUnits, ...categoryCustomUnits].sort((a, b) => a.name.localeCompare(b.name));
+
+  }, [categories, selectedCategory, customUnits]); // Add customUnits dependency
 
   // Handle category change
   const handleCategoryChange = (e) => {
@@ -153,7 +179,8 @@ function App() {
         return;
       }
 
-      const result = convertUnit(valueDecimal, fromUnit, toUnit);
+      // Pass customUnits array to the conversion function
+      const result = convertUnit(valueDecimal, fromUnit, toUnit, customUnits);
 
       if (result === null) {
         dispatch({ type: ActionTypes.SET_ERROR, payload: 'Conversion failed (check units)' });
@@ -164,7 +191,7 @@ function App() {
       console.error("Conversion error:", err);
       dispatch({ type: ActionTypes.SET_ERROR, payload: 'An unexpected error occurred' });
     }
-  }, [inputValue, fromUnit, toUnit, dispatch]);
+  }, [inputValue, fromUnit, toUnit, dispatch, customUnits]);
 
   // Handle swap
   const handleSwap = () => {
@@ -209,70 +236,101 @@ function App() {
     debouncedSearch(query);
   };
 
+  // Handle selecting a result from search
+  const handleResultSelect = (result) => {
+    if (!result) return;
+
+    dispatch({ type: ActionTypes.SET_CATEGORY, payload: result.categoryId });
+    // Set the selected unit as the 'From' unit by default
+    dispatch({ type: ActionTypes.SET_FROM_UNIT, payload: result.symbol });
+    // Optionally set input value to 1 for immediate conversion
+    dispatch({ type: ActionTypes.SET_INPUT_VALUE, payload: '1' });
+
+    // Clear search results after selection
+    setSearchResults([]);
+    // Ideally, close the search dropdown (handled in SearchComponent)
+    // Potentially focus the input value field here
+  };
+
   return (
     <Layout>
-      <ConversionWrapper>
-        <TopRow>
-          <h2>Unit Converter</h2>
-          {/* Add Search Component */}
-          <SearchComponent
-            onSearch={handleSearch}
-            placeholder="Search units..."
-            results={searchResults} // Pass results
-            isLoading={isSearching} // Pass loading state
+      <ErrorBoundary>
+        <ConversionWrapper>
+          <TopRow>
+            <h2>Unit Converter</h2>
+            {/* Lazy load Search Component */}
+            <Suspense fallback={<div>Loading Search...</div>}> {/* Or a more subtle placeholder */}
+              <LazySearchComponent
+                onSearch={handleSearch}
+                placeholder="Search units..."
+                results={searchResults} // Pass results
+                isLoading={isSearching} // Pass loading state
+                onResultSelect={handleResultSelect} // Pass selection handler
+              />
+            </Suspense>
+            {/* Add Favorite Button */}
+            <FavoriteButton isFavorite={isCurrentFavorite} onClick={handleToggleFavorite} />
+          </TopRow>
+          <CategorySelector
+            categories={categoryOptions}
+            selectedCategory={selectedCategory}
+            onChange={handleCategoryChange}
           />
-          {/* Add Favorite Button */}
-          <FavoriteButton isFavorite={isCurrentFavorite} onClick={handleToggleFavorite} />
-        </TopRow>
-        <CategorySelector
-          categories={categoryOptions}
-          selectedCategory={selectedCategory}
-          onChange={handleCategoryChange}
-        />
 
-        <InputRow>
-          <InputField>
-            <NumericInput
-              label="Value"
-              id="input-value"
-              value={inputValue}
-              onChange={handleInputChange}
+          <InputRow>
+            <InputField>
+              <NumericInput
+                label="Value"
+                id="input-value"
+                value={inputValue}
+                onChange={handleInputChange}
+              />
+            </InputField>
+            <UnitSelector
+              label="From"
+              units={currentUnits}
+              selectedUnit={fromUnit}
+              onChange={handleFromUnitChange}
+              id="from-unit"
             />
-          </InputField>
-          <UnitSelector
-            label="From"
-            units={currentUnits}
-            selectedUnit={fromUnit}
-            onChange={handleFromUnitChange}
-            id="from-unit"
-          />
 
-          <SwapButtonWrapper>
-            {/* Replace span with actual SwapIcon component later */}
-            <IconButton onClick={handleSwap} aria-label="Swap units">
-              <span>&#8644;</span> {/* Basic swap symbol */}
-            </IconButton>
-          </SwapButtonWrapper>
+            <SwapButtonWrapper>
+              {/* Replace span with actual SwapIcon component later */}
+              <IconButton onClick={handleSwap} aria-label="Swap units">
+                <span>&#8644;</span> {/* Basic swap symbol */}
+              </IconButton>
+            </SwapButtonWrapper>
 
-          <UnitSelector
-            label="To"
-            units={currentUnits}
-            selectedUnit={toUnit}
-            onChange={handleToUnitChange}
-            id="to-unit"
-          />
-        </InputRow>
+            <UnitSelector
+              label="To"
+              units={currentUnits}
+              selectedUnit={toUnit}
+              onChange={handleToUnitChange}
+              id="to-unit"
+            />
+          </InputRow>
 
-        <ConversionResult result={outputValue} error={state.error} />
+          <ConversionResult result={outputValue} error={state.error} />
 
-        {/* Add History and Favorites Sections side-by-side */}
-        <InfoSections>
-          <HistoryList />
-          <FavoritesList />
-        </InfoSections>
+          {/* Button to open Custom Unit Manager (Hypothetical) */}
+          <button onClick={() => setShowCustomUnitsManager(true)}>Manage Custom Units</button>
 
-        {/* History and Favorites sections to be added later */}
-      </ConversionWrapper>
+          {/* Conditionally render Custom Unit Manager with Suspense */}
+          {showCustomUnitsManager && (
+            <Suspense fallback={<div>Loading Custom Unit Manager...</div>}>
+              {/* Assume Modal wrapper or similar is handled inside CustomUnitManager or here */}
+              <LazyCustomUnitManager />
+            </Suspense>
+          )}
+
+          {/* Add History and Favorites Sections side-by-side */}
+          <InfoSections>
+            <HistoryList />
+            <FavoritesList />
+          </InfoSections>
+
+        </ConversionWrapper>
+      </ErrorBoundary>
     </Layout>
   );
 }

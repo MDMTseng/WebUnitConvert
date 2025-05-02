@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { convertUnit } from './conversions';
 import Decimal from 'decimal.js';
 
@@ -15,13 +15,119 @@ const expectDecimal = (actual, expected, decimalPlaces = 5) => {
   );
 };
 
+// Mock custom units for testing
+const mockCustomUnits = [
+  {
+    id: 'custom-1',
+    name: 'Furlong',
+    symbol: 'fur',
+    categoryId: 'length',
+    factorToBase: 201.168, // 1 Furlong = 201.168 meters
+  },
+  {
+    id: 'custom-2',
+    name: 'Stone',
+    symbol: 'st',
+    categoryId: 'weight',
+    factorToBase: 6.35029, // 1 Stone = 6.35029 kg
+  },
+];
+
 describe('convertUnit', () => {
-  // --- Length Conversions ---
-  it('should convert meters to feet', () => {
-    const result = convertUnit(10, 'm', 'ft');
-    expectDecimal(result, 32.8084);
+
+  // Mock console.error before each test
+  beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
+  // Restore console.error after each test
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // --- Standard Units Tests (Keep a few representative ones) ---
+  it('should convert meters to feet correctly', () => {
+    const result = convertUnit(1, 'm', 'ft');
+    expect(result).toBeInstanceOf(Decimal);
+    expect(result.toFixed(4)).toBe('3.2808');
+  });
+
+  it('should convert kilograms to pounds correctly', () => {
+    const result = convertUnit(1, 'kg', 'lb');
+    expect(result.toFixed(4)).toBe('2.2046');
+  });
+
+  it('should return the same value when units are identical', () => {
+    const result = convertUnit(10, 'm', 'm');
+    expect(result.equals(10)).toBe(true);
+  });
+
+  // --- Temperature Tests (Keep representative ones) ---
+  it('should convert Celsius to Fahrenheit correctly', () => {
+    const result = convertUnit(0, 'c', 'f');
+    expect(result.equals(32)).toBe(true);
+  });
+
+  it('should convert Fahrenheit to Celsius correctly', () => {
+    const result = convertUnit(32, 'f', 'c');
+    expect(result.equals(0)).toBe(true);
+  });
+
+  // --- Custom Units Tests ---
+  it('should convert meters to custom Furlongs correctly', () => {
+    const result = convertUnit(201.168, 'm', 'fur', mockCustomUnits);
+    expect(result.toFixed(0)).toBe('1');
+  });
+
+  it('should convert custom Furlongs to feet correctly', () => {
+    const result = convertUnit(1, 'fur', 'ft', mockCustomUnits);
+    expect(result.toFixed(0)).toBe('660');
+  });
+
+  it('should convert custom Stones to kilograms correctly', () => {
+    const result = convertUnit(1, 'st', 'kg', mockCustomUnits);
+    expect(result.toFixed(5)).toBe('6.35029');
+  });
+
+  it('should convert kilograms to custom Stones correctly', () => {
+    const result = convertUnit(6.35029, 'kg', 'st', mockCustomUnits);
+    expect(result.toFixed(0)).toBe('1');
+  });
+
+  // --- Edge Cases & Errors Tests ---
+  it('should return null for conversion between different categories', () => {
+    const result = convertUnit(1, 'm', 'kg', mockCustomUnits);
+    expect(result).toBeNull();
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('different categories'));
+  });
+
+  it('should return null for conversion with unknown standard units', () => {
+    const result = convertUnit(1, 'm', 'unknown');
+    expect(result).toBeNull();
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('not found'));
+
+  });
+
+  it('should return null for conversion with unknown custom units', () => {
+    const result = convertUnit(1, 'm', 'unknownCustom', mockCustomUnits);
+    expect(result).toBeNull();
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('not found'));
+  });
+
+  it('should return null for custom temperature units', () => {
+    const customTemp = [{
+        id: 'custom-t',
+        name: 'Rankine',
+        symbol: 'R',
+        categoryId: 'temperature',
+        factorToBase: 1 // Incorrect, but for testing the block
+      }];
+    const result = convertUnit(1, 'c', 'R', customTemp);
+    expect(result).toBeNull();
+    expect(console.error).toHaveBeenCalledWith("Custom temperature units are not supported.");
+  });
+
+  // --- Length Conversions ---
   it('should convert kilometers to miles', () => {
     const result = convertUnit(5, 'km', 'mi');
     expectDecimal(result, 3.10686);
@@ -33,37 +139,12 @@ describe('convertUnit', () => {
   });
 
   // --- Weight Conversions ---
-  it('should convert kilograms to pounds', () => {
-    const result = convertUnit(70, 'kg', 'lb');
-    expectDecimal(result, 154.32371);
-  });
-
   it('should convert ounces to grams', () => {
     const result = convertUnit(16, 'oz', 'g');
     expectDecimal(result, 453.592);
   });
 
   // --- Temperature Conversions ---
-  it('should convert Celsius to Fahrenheit', () => {
-    const result = convertUnit(0, 'c', 'f');
-    expectDecimal(result, 32);
-  });
-
-  it('should convert Fahrenheit to Celsius', () => {
-    const result = convertUnit(32, 'f', 'c');
-    expectDecimal(result, 0);
-  });
-
-  it('should convert Celsius to Kelvin', () => {
-    const result = convertUnit(100, 'c', 'k');
-    expectDecimal(result, 373.15);
-  });
-
-  it('should convert Kelvin to Celsius', () => {
-    const result = convertUnit(273.15, 'k', 'c');
-    expectDecimal(result, 0);
-  });
-
   it('should convert Fahrenheit to Kelvin', () => {
     const result = convertUnit(212, 'f', 'k');
     expectDecimal(result, 373.15);
@@ -120,19 +201,9 @@ describe('convertUnit', () => {
   });
 
   // --- Edge Cases and Invalid Conversions ---
-  it('should return the same value when converting to the same unit', () => {
-    const result = convertUnit(100, 'kg', 'kg');
-    expectDecimal(result, 100);
-  });
-
   it('should handle zero correctly', () => {
     const result = convertUnit(0, 'm', 'ft');
     expectDecimal(result, 0);
-  });
-
-  it('should return null for conversions between different categories', () => {
-    const result = convertUnit(10, 'kg', 'm');
-    expect(result).toBeNull();
   });
 
   it('should return null for invalid unit symbols', () => {

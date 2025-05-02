@@ -1,0 +1,34 @@
+.errorBoundaryContainer {
+  padding: 2rem;
+  border: 1px solid var(--color-error);
+  border-radius: var(--border-radius-medium);
+  background-color: var(--color-background-alt);
+  color: var(--color-text-primary);
+  margin: 1rem;
+  text-align: center;
+}
+
+.errorTitle {
+  color: var(--color-error);
+  margin-bottom: 1rem;
+}
+
+.errorMessage {
+  margin-bottom: 1rem;
+}
+
+.errorBoundaryContainer details {
+  margin-top: 1rem;
+  text-align: left;
+  font-size: 0.9em;
+  background-color: var(--color-background);
+  padding: 0.5rem;
+  border-radius: var(--border-radius-small);
+  overflow-x: auto;
+}
+
+.errorBoundaryContainer summary {
+  cursor: pointer;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+} 
